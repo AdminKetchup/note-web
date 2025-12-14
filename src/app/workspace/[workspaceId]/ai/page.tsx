@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useAuth } from "@/lib/auth"; // Assuming we have auth context
+import { useAuth } from "@/context/AuthContext"; // Assuming we have auth context
 import { generateAIContent } from "@/lib/ai";
 import { Sparkles, ArrowUp, Zap, FileText, Globe, Paperclip, Search, CheckCircle2, ChevronDown } from "lucide-react";
 
@@ -15,7 +15,7 @@ export default function AIDashboard() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
-    
+
     // Model Selection State
     const [model, setModel] = useState("anthropic/claude-4.5-sonnet"); // Default
     const [showModelSelector, setShowModelSelector] = useState(false);
@@ -42,7 +42,7 @@ export default function AIDashboard() {
         try {
             // Pass the selected model to the generator
             const content = await generateAIContent(userMsg.content, undefined, model);
-            
+
             const aiMsg: Message = { role: 'assistant', content };
             setMessages(prev => [...prev, aiMsg]);
         } catch (error) {
@@ -54,7 +54,7 @@ export default function AIDashboard() {
 
     return (
         <div className="flex-1 h-screen overflow-hidden flex flex-col items-center justify-center bg-white dark:bg-[#191919] relative transition-colors">
-            
+
             {/* Top Right Model Selector */}
             <div className="absolute top-6 right-6 z-20">
                 <div className="relative">
@@ -73,41 +73,41 @@ export default function AIDashboard() {
                     {/* Model Dropdown */}
                     {showModelSelector && (
                         <div className="absolute top-12 right-0 w-64 bg-white dark:bg-[#252525] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-[400px] overflow-y-auto p-1 animate-in fade-in zoom-in-95 duration-100">
-                             <div className="text-[10px] font-semibold text-gray-400 px-2 py-1 uppercase">2025 / Advanced</div>
+                            <div className="text-[10px] font-semibold text-gray-400 px-2 py-1 uppercase">2025 / Advanced</div>
                             <button onClick={() => handleModelChange("anthropic/claude-4.5-sonnet")} className="w-full text-left px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 flex justify-between items-center transition">
-                                <span className="font-medium">Claude 4.5 Sonnet</span> 
+                                <span className="font-medium">Claude 4.5 Sonnet</span>
                                 {model === "anthropic/claude-4.5-sonnet" && <span className="text-blue-500">✓</span>}
                             </button>
                             <button onClick={() => handleModelChange("anthropic/claude-4.5-opus")} className="w-full text-left px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 flex justify-between items-center transition">
-                                <span className="font-medium">Claude 4.5 Opus</span> 
+                                <span className="font-medium">Claude 4.5 Opus</span>
                                 {model === "anthropic/claude-4.5-opus" && <span className="text-blue-500">✓</span>}
                             </button>
                             <button onClick={() => handleModelChange("google/gemini-2.5-flash")} className="w-full text-left px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 flex justify-between items-center transition">
-                                <span className="font-medium">Gemini 2.5 Flash</span> 
+                                <span className="font-medium">Gemini 2.5 Flash</span>
                                 {model === "google/gemini-2.5-flash" && <span className="text-blue-500">✓</span>}
                             </button>
                             <button onClick={() => handleModelChange("google/gemini-3.0-pro")} className="w-full text-left px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 flex justify-between items-center transition">
-                                <span className="font-medium">Gemini 3.0 Pro</span> 
+                                <span className="font-medium">Gemini 3.0 Pro</span>
                                 {model === "google/gemini-3.0-pro" && <span className="text-blue-500">✓</span>}
                             </button>
                             <button onClick={() => handleModelChange("openai/gpt-5.2")} className="w-full text-left px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 flex justify-between items-center transition">
-                                <span className="font-medium">GPT-5.2</span> 
+                                <span className="font-medium">GPT-5.2</span>
                                 {model === "openai/gpt-5.2" && <span className="text-blue-500">✓</span>}
                             </button>
                             <button onClick={() => handleModelChange("openai/gpt-5.2-thinking")} className="w-full text-left px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 flex justify-between items-center transition">
-                                <span className="font-medium">GPT-5.2 (Thinking)</span> 
+                                <span className="font-medium">GPT-5.2 (Thinking)</span>
                                 {model === "openai/gpt-5.2-thinking" && <span className="text-blue-500">✓</span>}
                             </button>
 
                             <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
-                            
+
                             <div className="text-[10px] font-semibold text-gray-400 px-2 py-1 uppercase">Open Source</div>
-                             <button onClick={() => handleModelChange("meta-llama/llama-3-70b-instruct")} className="w-full text-left px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 flex justify-between items-center transition">
-                                <span className="font-medium">Llama 3 70B</span> 
+                            <button onClick={() => handleModelChange("meta-llama/llama-3-70b-instruct")} className="w-full text-left px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 flex justify-between items-center transition">
+                                <span className="font-medium">Llama 3 70B</span>
                                 {model === "meta-llama/llama-3-70b-instruct" && <span className="text-blue-500">✓</span>}
                             </button>
                             <button onClick={() => handleModelChange("mistralai/mistral-large")} className="w-full text-left px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 flex justify-between items-center transition">
-                                <span className="font-medium">Mistral Large</span> 
+                                <span className="font-medium">Mistral Large</span>
                                 {model === "mistralai/mistral-large" && <span className="text-blue-500">✓</span>}
                             </button>
                         </div>
@@ -116,7 +116,7 @@ export default function AIDashboard() {
             </div>
 
             <div className="w-full max-w-3xl flex flex-col h-full p-6">
-                
+
                 {messages.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-500">
                         {/* Hero Icon */}
@@ -131,10 +131,10 @@ export default function AIDashboard() {
                         <div className="w-full max-w-2xl relative group z-10">
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
                             <div className="relative bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-700 shadow-sm group-hover:shadow-lg rounded-2xl p-4 transition-all">
-                                
+
                                 {/* Top Controls */}
                                 <div className="flex items-center gap-2 mb-3">
-                                     <button className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-100 dark:bg-[#333] hover:bg-gray-200 dark:hover:bg-[#444] text-xs font-medium text-gray-600 dark:text-gray-300 transition">
+                                    <button className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-100 dark:bg-[#333] hover:bg-gray-200 dark:hover:bg-[#444] text-xs font-medium text-gray-600 dark:text-gray-300 transition">
                                         <span className="font-bold text-gray-400">@</span> Add context
                                     </button>
                                 </div>
@@ -210,8 +210,8 @@ export default function AIDashboard() {
                 ) : (
                     /* Chat Interface (Simple view for now) */
                     <div className="w-full h-full flex flex-col max-w-4xl mx-auto">
-                         {/* Chat History */}
-                         <div className="flex-1 overflow-y-auto mb-4 space-y-6 pr-2">
+                        {/* Chat History */}
+                        <div className="flex-1 overflow-y-auto mb-4 space-y-6 pr-2">
                             {messages.map((m, i) => (
                                 <div key={i} className={`flex gap-4 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     {m.role === 'assistant' && (
@@ -219,11 +219,10 @@ export default function AIDashboard() {
                                             <Sparkles size={14} />
                                         </div>
                                     )}
-                                    <div className={`p-4 rounded-2xl max-w-[80%] leading-relaxed shadow-sm ${
-                                        m.role === 'user' 
-                                            ? 'bg-blue-600 text-white rounded-tr-sm' 
+                                    <div className={`p-4 rounded-2xl max-w-[80%] leading-relaxed shadow-sm ${m.role === 'user'
+                                            ? 'bg-blue-600 text-white rounded-tr-sm'
                                             : 'bg-white dark:bg-[#252525] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700/50 rounded-tl-sm'
-                                    }`}>
+                                        }`}>
                                         {m.content}
                                     </div>
                                     {m.role === 'user' && (
@@ -235,18 +234,18 @@ export default function AIDashboard() {
                             ))}
                             {loading && (
                                 <div className="flex gap-4">
-                                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white shrink-0 opacity-50">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white shrink-0 opacity-50">
                                         <Sparkles size={14} />
                                     </div>
                                     <div className="flex items-center gap-2 text-gray-400 text-sm h-8">
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}/>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}/>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}/>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                     </div>
                                 </div>
                             )}
                         </div>
-                        
+
                         {/* Chat Input */}
                         <div className="relative">
                             <input
