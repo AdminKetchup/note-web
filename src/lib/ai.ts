@@ -2,7 +2,7 @@ const MODEL_MAPPING: Record<string, string> = {
     "anthropic/claude-4.5-sonnet": "anthropic/claude-3.5-sonnet",
     "anthropic/claude-4.5-opus": "anthropic/claude-3-opus",
     "google/gemini-2.5-flash": "google/gemini-flash-1.5",
-    "google/gemini-3.0-pro": "google/gemini-pro-1.5",
+    "google/gemini-3.0-pro": "google/gemini-flash-1.5",
     "openai/gpt-5.2": "openai/gpt-4o"
 };
 
