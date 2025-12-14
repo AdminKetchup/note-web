@@ -2,7 +2,7 @@ const MODEL_MAPPING: Record<string, string> = {
     "anthropic/claude-4.5-sonnet": "anthropic/claude-3.5-sonnet",
     "anthropic/claude-4.5-opus": "anthropic/claude-3-opus",
     "google/gemini-2.5-flash": "google/gemini-flash-1.5",
-    "google/gemini-3.0-pro": "google/gemini-flash-1.5",
+    "google/gemini-3.0-pro": "google/gemini-2.0-flash-thinking-exp-1219",
     "openai/gpt-5.2": "openai/gpt-4o"
 };
 
@@ -10,7 +10,12 @@ export function resolveModelID(modelId: string): string {
     return MODEL_MAPPING[modelId] || modelId;
 }
 
-export async function generateAIContent(prompt: string, systemPrompt?: string, modelOverride?: string): Promise<string> {
+export interface AIResponse {
+    content: string;
+    reasoning?: string;
+}
+
+export async function generateAIContent(prompt: string, systemPrompt?: string, modelOverride?: string): Promise<AIResponse> {
     try {
         const apiKey = localStorage.getItem("openrouter_api_key");
         const storedModel = localStorage.getItem("openrouter_model");
@@ -20,7 +25,7 @@ export async function generateAIContent(prompt: string, systemPrompt?: string, m
         const model = resolveModelID(rawModel);
 
         if (!apiKey) {
-            return "Please set your OpenRouter API Key in Settings.";
+            return { content: "Please set your OpenRouter API Key in Settings." };
         }
 
         const messages = [
@@ -46,9 +51,9 @@ export async function generateAIContent(prompt: string, systemPrompt?: string, m
             throw new Error(data.error || 'Failed to generate content');
         }
 
-        return data.content;
+        return { content: data.content, reasoning: data.reasoning };
     } catch (e: any) {
         console.error("AI Generation Failed", e);
-        return `[Error: ${e.message}]`;
+        return { content: `[Error: ${e.message}]` };
     }
 }

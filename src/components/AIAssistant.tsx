@@ -125,9 +125,9 @@ export default function AIAssistant({ onInsertContent, editorContent, workspaceI
             
             Always aim for clarity and actionable information.`;
 
-            const result = await generateAIContent(finalPrompt, sysPrompt, model);
+            const { content, reasoning } = await generateAIContent(finalPrompt, sysPrompt, model);
 
-            setMessages(prev => [...prev, { role: 'assistant', content: result }]);
+            setMessages(prev => [...prev, { role: 'assistant', content, reasoning }]);
         } catch (e) {
             setMessages(prev => [...prev, { role: 'assistant', content: "Error: Could not process request." }]);
         } finally {
@@ -241,25 +241,37 @@ export default function AIAssistant({ onInsertContent, editorContent, workspaceI
                             messages.map((m, i) => (
                                 <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     {m.role === 'assistant' && <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 flex items-center justify-center">🤖</div>}
-                                    <div className={`max-w-[80%] p-3 rounded-lg text-sm ${m.role === 'user' ? 'bg-black text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200'}`}>
-                                        <div className="whitespace-pre-wrap">{m.content}</div>
-                                        {m.role === 'assistant' && (
-                                            <div className="mt-3 flex gap-2 w-full">
-                                                <button
-                                                    onClick={() => onInsertContent(m.content)}
-                                                    className="flex-1 bg-black text-white dark:bg-white dark:text-black py-1.5 rounded-md text-xs font-bold hover:opacity-80 transition flex items-center justify-center gap-2"
-                                                >
-                                                    <FileText size={14} /> Add to Page
-                                                </button>
-                                                <button
-                                                    onClick={() => navigator.clipboard.writeText(m.content)}
-                                                    className="px-2 bg-gray-100 dark:bg-gray-700/50 rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-                                                    title="Copy to clipboard"
-                                                >
-                                                    <Copy size={14} />
-                                                </button>
-                                            </div>
+                                    <div className="flex flex-col gap-1 max-w-[80%]">
+                                        {(m as any).reasoning && (
+                                            <details className="mb-1 group">
+                                                <summary className="cursor-pointer text-[10px] text-gray-400 font-mono flex items-center gap-1 select-none">
+                                                    <span className="w-1 h-2 bg-purple-400 rounded-full"></span> Thinking...
+                                                </summary>
+                                                <div className="mt-1 text-[10px] text-gray-500 bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 font-mono whitespace-pre-wrap">
+                                                    {(m as any).reasoning}
+                                                </div>
+                                            </details>
                                         )}
+                                        <div className={`p-3 rounded-lg text-sm ${m.role === 'user' ? 'bg-black text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200'}`}>
+                                            <div className="whitespace-pre-wrap">{m.content}</div>
+                                            {m.role === 'assistant' && (
+                                                <div className="mt-3 flex gap-2 w-full">
+                                                    <button
+                                                        onClick={() => onInsertContent(m.content)}
+                                                        className="flex-1 bg-black text-white dark:bg-white dark:text-black py-1.5 rounded-md text-xs font-bold hover:opacity-80 transition flex items-center justify-center gap-2"
+                                                    >
+                                                        <FileText size={14} /> Add to Page
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigator.clipboard.writeText(m.content)}
+                                                        className="px-2 bg-gray-100 dark:bg-gray-700/50 rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                                                        title="Copy to clipboard"
+                                                    >
+                                                        <Copy size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))

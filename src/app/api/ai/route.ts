@@ -34,8 +34,9 @@ export async function POST(req: Request) {
                 "X-Title": "MyArchive Note"
             },
             body: JSON.stringify({
-                "model": model || "openai/gpt-3.5-turbo", // Use user selected model or default
-                "messages": payloadMessages
+                "model": model || "openai/gpt-3.5-turbo",
+                "messages": payloadMessages,
+                "reasoning": { "max_tokens": 2048 }
             })
         });
 
@@ -44,8 +45,11 @@ export async function POST(req: Request) {
             throw new Error(data.error.message || 'OpenRouter Error');
         }
 
-        const content = data.choices?.[0]?.message?.content || "";
-        return NextResponse.json({ content });
+        const choice = data.choices?.[0]?.message;
+        const content = choice?.content || "";
+        const reasoning = choice?.reasoning || ""; // OpenRouter standard field
+
+        return NextResponse.json({ content, reasoning });
 
     } catch (error: any) {
         console.error("AI API Error:", error);

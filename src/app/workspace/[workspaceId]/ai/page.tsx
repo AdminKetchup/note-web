@@ -9,6 +9,7 @@ import { createChat, updateChatMessages, getWorkspaceChats, getChat, ChatSession
 interface Message {
     role: 'user' | 'assistant';
     content: string;
+    reasoning?: string;
 }
 
 export default function AIDashboard({ params }: { params: Promise<{ workspaceId: string }> }) {
@@ -129,9 +130,9 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
             }
 
             // 2. Generate AI content
-            const content = await generateAIContent(userMsg.content, undefined, model);
+            const { content, reasoning } = await generateAIContent(userMsg.content, undefined, model);
 
-            const aiMsg: Message = { role: 'assistant', content };
+            const aiMsg: Message = { role: 'assistant', content, reasoning };
             const finalMessages = [...newMessages, aiMsg];
 
             setMessages(finalMessages);
@@ -277,17 +278,34 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
                         // Chat History
                         <div className="w-full max-w-3xl space-y-6">
                             {messages.map((m, i) => (
-                                <div key={i} className={`flex gap-4 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div key={i} className={`flex gap-4 ${m.role === 'user' ? 'justify-end' : 'justify-start items-start'}`}>
                                     {m.role === 'assistant' && (
-                                        <div className="w-8 h-8 rounded-full border border-gray-700 flex items-center justify-center text-white text-xs shrink-0 bg-[#252525]">
-                                            <Sparkles size={14} />
+                                        <div className="w-8 h-8 rounded-full bg-[#333] flex-shrink-0 flex items-center justify-center border border-gray-700">
+                                            <Sparkles size={16} className="text-purple-400" />
                                         </div>
                                     )}
-                                    <div className={`p-4 rounded-2xl max-w-[85%] leading-relaxed ${m.role === 'user'
-                                        ? 'bg-[#2A2A2A] text-white rounded-tr-md'
-                                        : 'text-gray-200'
-                                        }`}>
-                                        {m.content}
+                                    <div className={`max-w-[85%] flex flex-col gap-2 ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+
+                                        {/* Reasoning Block */}
+                                        {m.reasoning && (
+                                            <details className="mb-2 group">
+                                                <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1 select-none font-mono">
+                                                    <div className="w-1 h-3 bg-purple-500 rounded-full mr-1"></div>
+                                                    Thinking Process
+                                                    <ChevronDown size={12} className="group-open:rotate-180 transition-transform" />
+                                                </summary>
+                                                <div className="mt-2 text-xs text-gray-400 bg-[#222] p-3 rounded-md border border-gray-700/50 font-mono whitespace-pre-wrap leading-relaxed animate-in fade-in slide-in-from-top-1">
+                                                    {m.reasoning}
+                                                </div>
+                                            </details>
+                                        )}
+
+                                        <div className={`p-4 rounded-2xl text-[15px] leading-relaxed shadow-sm ${m.role === 'user'
+                                                ? 'bg-white text-black font-medium'
+                                                : 'bg-[#2A2A2A] text-gray-100 border border-gray-800'
+                                            }`}>
+                                            <div className="whitespace-pre-wrap">{m.content}</div>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
