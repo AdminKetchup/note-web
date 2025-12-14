@@ -330,7 +330,7 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
                                     handleSend();
                                 }
                             }}
-                            placeholder="Message ChatGPT..."
+                            placeholder="Message AI..."
                             className="flex-1 bg-transparent border-none outline-none text-white px-2 placeholder:text-gray-500"
                         />
 
@@ -348,7 +348,7 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
 
                 {/* Footer Info */}
                 <div className="absolute bottom-2 w-full text-center text-[10px] text-gray-600 pointer-events-none">
-                    ChatGPT can make mistakes. Check important info.
+                    AI can make mistakes. Check important info.
                 </div>
             </div>
         </div>
