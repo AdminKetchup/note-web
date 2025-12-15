@@ -1,0 +1,154 @@
+import { useState, useRef, useEffect } from 'react';
+import { generateAIContent } from '@/lib/ai';
+import { updatePage, Page } from '@/lib/workspace';
+
+interface Message {
+    role: 'user' | 'assistant';
+    content: string;
+    reasoning?: string;
+}
+
+interface UseAIChatProps {
+    workspaceId: string;
+    editorContent: string;
+    onInsertContent: (content: string) => void;
+    onReplaceContent: (content: string) => void;
+    availablePages: Page[];
+}
+
+export function useAIChat({
+    workspaceId,
+    editorContent,
+    onInsertContent,
+    onReplaceContent,
+    availablePages
+}: UseAIChatProps) {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [model, setModel] = useState("google/gemini-3.0-pro");
+    const [isWebMode, setIsWebMode] = useState(false);
+    const [selectedContext, setSelectedContext] = useState<Page[]>([]);
+
+    const handleModelChange = (newModel: string) => {
+        setModel(newModel);
+        localStorage.setItem("openrouter_model", newModel);
+    };
+
+    // Load persisted model on mount
+    useEffect(() => {
+        const savedModel = localStorage.getItem("openrouter_model");
+        if (savedModel) {
+            setModel(savedModel);
+        }
+    }, []);
+
+    const handleSend = async () => {
+        if (!input.trim()) return;
+
+        const userMsg: Message = { role: 'user', content: input };
+        setMessages(prev => [...prev, userMsg]);
+        setInput("");
+        setLoading(true);
+
+        try {
+            // Build context string WITH IDs
+            let contextStr = "";
+            if (selectedContext.length > 0) {
+                contextStr += "Context from referenced pages:\n";
+                // Improved mapping using explicit return and string concatenation
+                const formattedContext = selectedContext.map(p => {
+                    return "- Page: " + p.title + " (ID: " + p.id + ") \n  Content: " + (p.content || "Empty");
+                });
+                contextStr += formattedContext.join("\n\n") + "\n\n";
+            }
+            contextStr += `Current Editor Content: \n${editorContent.substring(0, 1000)}...\n\n`;
+
+            let finalPrompt = `${contextStr}User Query: ${userMsg.content} `;
+            if (isWebMode) {
+                finalPrompt += "\n\n[Instruction: The user has enabled Web Search Mode. Please use your internal knowledge base to act as if you are searching the web. Provide up-to-date, comprehensive information as if you just browsed the internet.]";
+            }
+
+            const sysPrompt = `You are an expert AI coding and note-taking assistant embedded in a modern notion-like workspace.
+            
+            **Guidelines:**
+            1. **Format**: Use clean Markdown.
+            2. **Tone**: Be professional, direct, and helpful.
+            3. **Tools/Permissions**: You have permission to MODIFY the pages.
+               - To **APPEND** to current editor: Use \`:::action { "type": "append", "content": "text" } :::\`
+               - To **REPLACE** current editor: Use \`:::action { "type": "replace", "content": "text" } :::\`
+               - To **UPDATE** a specific context page: Use \`:::action { "type": "update_page", "pageId": "PAGE_ID_FROM_CONTEXT", "content": "new full content" } :::\`
+               - ONLY use these actions if the user explicitly asks to edit, write, fix, or modify.
+               - You can execute multiple actions in one response.
+            4. **Context**: Use the provided page IDs to target specific pages.
+            
+            Always aim for clarity and actionable information.`;
+
+            const { content, reasoning } = await generateAIContent(finalPrompt, sysPrompt, model);
+
+            // Parse Actions
+            let displayContent = content;
+            const actionRegex = /:::action\s*({[\s\S]*?})\s*:::/g;
+            let match;
+            const actionsToExecute: any[] = [];
+
+            while ((match = actionRegex.exec(content)) !== null) {
+                try {
+                    const actionJson = match[1];
+                    const action = JSON.parse(actionJson);
+                    actionsToExecute.push(action);
+                    displayContent = displayContent.replace(match[0], `__ACTION_EXECUTED:${action.type}__`);
+                } catch (e) {
+                    console.error("Failed to parse AI action", e);
+                }
+            }
+
+            // Execute Actions
+            for (const action of actionsToExecute) {
+                if (action.type === 'append') {
+                    onInsertContent(action.content);
+                } else if (action.type === 'replace') {
+                    onReplaceContent(action.content);
+                } else if (action.type === 'update_page') {
+                    if (action.pageId && action.content) {
+                        await updatePage(action.pageId, { content: action.content });
+                    }
+                }
+            }
+
+            setMessages(prev => [...prev, { role: 'assistant', content: displayContent, reasoning }]);
+        } catch (e) {
+            setMessages(prev => [...prev, { role: 'assistant', content: "Error: Could not process request." }]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSuggestion = (type: 'translate' | 'improve' | 'summarize') => {
+        let text = "";
+        if (type === 'translate') {
+            text = "Translate this page to English (or identify language and translate to opposite).";
+        } else if (type === 'improve') {
+            text = "Fix grammar and improve the tone of this page.";
+        } else if (type === 'summarize') {
+            text = "Summarize this page in 3 bullet points.";
+        }
+        setInput(text);
+    };
+
+    return {
+        messages,
+        setMessages, // Exporting this to allow clearing
+        input,
+        setInput,
+        loading,
+        model,
+        handleModelChange,
+        handleSend,
+        isWebMode,
+        setIsWebMode,
+        selectedContext,
+        setSelectedContext,
+        handleSuggestion
+    };
+}
