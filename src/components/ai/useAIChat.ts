@@ -10,6 +10,7 @@ interface Message {
 
 interface UseAIChatProps {
     workspaceId: string;
+    userId: string;
     editorContent: string;
     onInsertContent: (content: string) => void;
     onReplaceContent: (content: string) => void;
@@ -18,6 +19,7 @@ interface UseAIChatProps {
 
 export function useAIChat({
     workspaceId,
+    userId,
     editorContent,
     onInsertContent,
     onReplaceContent,
@@ -84,7 +86,7 @@ export function useAIChat({
             
             Always aim for clarity and actionable information.`;
 
-            const { content, reasoning } = await generateAIContent(finalPrompt, sysPrompt, model);
+            const { content, reasoning } = await generateAIContent(finalPrompt, sysPrompt, model, userId);
 
             // Parse Actions
             let displayContent = content;

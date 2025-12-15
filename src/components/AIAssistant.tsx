@@ -50,6 +50,7 @@ export default function AIAssistant({ onInsertContent, onReplaceContent, editorC
         handleSuggestion
     } = useAIChat({
         workspaceId,
+        userId: '', // Will be updated once we integrate auth context
         editorContent,
         onInsertContent,
         onReplaceContent,

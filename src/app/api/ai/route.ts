@@ -1,15 +1,39 @@
-
 import { NextResponse } from 'next/server';
+import { decrypt } from '@/lib/crypto';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export async function POST(req: Request) {
     try {
-        const { messages, prompt, model } = await req.json();
-        // API key from server environment only (secure)
-        const apiKey = process.env.OPENROUTER_API_KEY;
+        const { messages, prompt, model, userId } = await req.json();
 
-        if (!apiKey) {
+        if (!userId) {
             return NextResponse.json(
-                { error: 'OpenRouter API Key not configured on server. Please add OPENROUTER_API_KEY to .env.local' },
+                { error: 'User ID is required' },
+                { status: 400 }
+            );
+        }
+
+        // Fetch encrypted API key from Firestore
+        const settingsRef = doc(db, 'users', userId, 'private', 'settings');
+        const settingsDoc = await getDoc(settingsRef);
+
+        if (!settingsDoc.exists() || !settingsDoc.data()?.openrouterKey) {
+            return NextResponse.json(
+                { error: 'API key not configured. Please add your OpenRouter API key in Settings.' },
+                { status: 401 }
+            );
+        }
+
+        // Decrypt the API key
+        let apiKey: string;
+        try {
+            const encryptedKey = settingsDoc.data().openrouterKey;
+            apiKey = decrypt(encryptedKey);
+        } catch (decryptError) {
+            console.error('Decryption failed:', decryptError);
+            return NextResponse.json(
+                { error: 'Failed to decrypt API key. Please re-save your API key in Settings.' },
                 { status: 500 }
             );
         }

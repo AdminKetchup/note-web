@@ -15,8 +15,17 @@ export interface AIResponse {
     reasoning?: string;
 }
 
-export async function generateAIContent(prompt: string, systemPrompt?: string, modelOverride?: string): Promise<AIResponse> {
+export async function generateAIContent(
+    prompt: string,
+    systemPrompt?: string,
+    modelOverride?: string,
+    userId?: string
+): Promise<AIResponse> {
     try {
+        if (!userId) {
+            return { content: "Error: User authentication required. Please log in." };
+        }
+
         const storedModel = localStorage.getItem("openrouter_model");
         // Prefer override, then stored, then default (Future ID)
         const rawModel = modelOverride || storedModel || "google/gemini-3.0-pro";
@@ -31,13 +40,13 @@ export async function generateAIContent(prompt: string, systemPrompt?: string, m
             messages.unshift({ role: 'system', content: systemPrompt });
         }
 
-        // API key is now handled server-side only
+        // Pass userId to server for API key lookup
         const res = await fetch('/api/ai', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ messages, model })
+            body: JSON.stringify({ messages, model, userId })
         });
 
         const data = await res.json();
