@@ -79,7 +79,7 @@ export default function AIAssistant({ onInsertContent, onReplaceContent, editorC
             if (selectedContext.length > 0) {
                 contextStr += "Context from referenced pages:\n";
                 // INCLUDE PAGE ID HERE
-                contextStr += selectedContext.map(p => `- [Page Title: ${ p.title }](ID: ${ p.id }) \n  Content: ${ p.content || "Empty" } `).join("\n\n") + "\n\n";
+                contextStr += selectedContext.map(p => `- Page: ${ p.title } (ID: ${ p.id }) \n  Content: ${ p.content || "Empty" } `).join("\n\n") + "\n\n";
             }
             contextStr += `Current Editor Content: \n${ editorContent.substring(0, 1000) }...\n\n`;
 
@@ -97,7 +97,6 @@ export default function AIAssistant({ onInsertContent, onReplaceContent, editorC
                - To ** APPEND ** to current editor: Use \`:::action { "type": "append", "content": "text" } :::\`
                - To **REPLACE** current editor: Use \`:::action { "type": "replace", "content": "text" } :::\`
                - To **UPDATE** a specific context page: Use \`:::action { "type": "update_page", "pageId": "PAGE_ID_FROM_CONTEXT", "content": "new full content" } :::\`
-               
                - ONLY use these actions if the user explicitly asks to edit, write, fix, or modify.
                - You can execute multiple actions in one response.
             4. **Context**: Use the provided page IDs to target specific pages.
@@ -198,7 +197,7 @@ return (
                             <span>New AI chat</span>
                             <span className="text-[10px] text-gray-400 font-normal">{model.split('/').pop()}</span>
                         </div>
-                        <ChevronDown size={14} className={`opacity-50 transition-transform ${showModelSelector ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={14} className={`opacity - 50 transition - transform ${showModelSelector ? 'rotate-180' : ''} `} />
                     </button>
 
                     {/* Model Selector Dropdown */}
@@ -267,7 +266,7 @@ return (
                         </div>
                     ) : (
                         messages.map((m, i) => (
-                            <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div key={i} className={`flex gap - 3 ${m.role === 'user' ? 'justify-end' : 'justify-start'} `}>
                                 {m.role === 'assistant' && <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 flex items-center justify-center">🤖</div>}
                                 <div className="flex flex-col gap-1 max-w-[80%]">
                                     {(m as any).reasoning && (
@@ -280,7 +279,7 @@ return (
                                             </div>
                                         </details>
                                     )}
-                                    <div className={`p-3 rounded-lg text-sm ${m.role === 'user' ? 'bg-black text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200'}`}>
+                                    <div className={`p - 3 rounded - lg text - sm ${m.role === 'user' ? 'bg-black text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200'} `}>
                                         {/* RENDER CONTENT WITH BADGES */}
                                         <div>{renderMessageContent(m.content)}</div>
 
@@ -432,7 +431,7 @@ return (
                                                 const reader = new FileReader();
                                                 reader.onload = (ev) => {
                                                     const text = ev.target?.result as string;
-                                                    setInput(prev => prev + `\n[Attached File: ${file.name}]\n${text}\n`);
+                                                    setInput(prev => prev + `\n[Attached File: ${file.name}]\n${text} \n`);
                                                 };
                                                 reader.readAsText(file);
                                             }
@@ -441,7 +440,7 @@ return (
                                 </button>
                                 <button
                                     onClick={() => setIsWebMode(!isWebMode)}
-                                    className={`p-1 rounded transition ${isWebMode ? "text-blue-500 bg-blue-50 dark:bg-blue-900/30" : "text-gray-400 hover:text-black dark:hover:text-white"}`}
+                                    className={`p - 1 rounded transition ${isWebMode ? "text-blue-500 bg-blue-50 dark:bg-blue-900/30" : "text-gray-400 hover:text-black dark:hover:text-white"} `}
                                     title="Toggle Web Knowledge"
                                 >
                                     <Globe size={14} />
@@ -450,7 +449,7 @@ return (
                             <button
                                 onClick={handleSend}
                                 disabled={loading || (!input.trim() && selectedContext.length === 0)}
-                                className={`w-7 h-7 rounded-sm flex items-center justify-center transition-all ${input.trim() ? "bg-black text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+                                className={`w - 7 h - 7 rounded - sm flex items - center justify - center transition - all ${input.trim() ? "bg-black text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"} `}
                             >
                                 <ArrowUp size={16} />
                             </button>
@@ -463,8 +462,8 @@ return (
         {/* Fab */}
         <button
             onClick={() => setIsOpen(!isOpen)}
-            className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all border border-gray-200 dark:border-gray-700 ${isOpen ? "bg-white text-black rotate-90" : "bg-white hover:bg-gray-50 text-black hover:scale-105"
-                }`}
+            className={`w - 12 h - 12 rounded - full shadow - lg flex items - center justify - center transition - all border border - gray - 200 dark: border - gray - 700 ${isOpen ? "bg-white text-black rotate-90" : "bg-white hover:bg-gray-50 text-black hover:scale-105"
+                } `}
             style={isOpen ? { boxShadow: 'none' } : {}}
         >
             {isOpen ? <X size={24} /> : <Sparkles size={20} className="text-purple-600" fill="currentColor" fillOpacity={0.2} />}
