@@ -39,37 +39,40 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-                    <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 text-center">
-                        <div className="flex justify-center mb-4">
-                            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                                <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
-                            </div>
-                        </div>
+                <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#191919] p-4">
+                    <div className="max-w-md w-full">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            {/* Minimal icon */}
+                            <div className="text-6xl opacity-20">😵</div>
 
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                            Something went wrong
-                        </h1>
+                            {/* Error message */}
+                            <div className="space-y-2">
+                                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    Something went wrong
+                                </h1>
 
-                        <p className="text-gray-600 dark:text-gray-400 mb-6">
-                            We're sorry, but something unexpected happened. Please try reloading the page.
-                        </p>
-
-                        {process.env.NODE_ENV === 'development' && this.state.error && (
-                            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-left">
-                                <p className="text-sm font-mono text-red-800 dark:text-red-300 break-words">
-                                    {this.state.error.toString()}
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    An unexpected error occurred
                                 </p>
                             </div>
-                        )}
 
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                        >
-                            <RefreshCw size={18} />
-                            Reload Page
-                        </button>
+                            {/* Development error details */}
+                            {process.env.NODE_ENV === 'development' && this.state.error && (
+                                <div className="w-full p-3 bg-gray-50 dark:bg-[#252525] rounded-lg text-left border border-gray-200 dark:border-gray-800">
+                                    <p className="text-xs font-mono text-gray-700 dark:text-gray-300 break-words">
+                                        {this.state.error.toString()}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Reload button - Notion style */}
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="mt-2 px-4 py-2 bg-[#2383E2] hover:bg-[#1a6ec7] text-white text-sm font-medium rounded transition-colors"
+                            >
+                                Reload page
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
