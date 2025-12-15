@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCheck, Copy, FileText } from 'lucide-react';
+import { memo } from 'react';
 
 interface ChatMessageProps {
     role: 'user' | 'assistant';
@@ -9,7 +10,7 @@ interface ChatMessageProps {
     onInsertContent: (content: string) => void;
 }
 
-export default function ChatMessage({ role, content, reasoning, onInsertContent }: ChatMessageProps) {
+function ChatMessage({ role, content, reasoning, onInsertContent }: ChatMessageProps) {
     // Helper to render content with styled action badges
     const renderMessageContent = (msgContent: string) => {
         const parts = msgContent.split(/(__ACTION_EXECUTED:[a-z_]+__)/g);
@@ -69,3 +70,6 @@ export default function ChatMessage({ role, content, reasoning, onInsertContent 
         </div>
     );
 }
+
+// Wrap with React.memo for performance
+export default memo(ChatMessage);

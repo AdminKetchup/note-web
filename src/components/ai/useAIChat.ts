@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { generateAIContent } from '@/lib/ai';
 import { updatePage, Page } from '@/lib/workspace';
 import { toast } from 'sonner';
@@ -41,7 +41,7 @@ export function useAIChat({
         }
     }, []);
 
-    const handleSend = async () => {
+    const handleSend = useCallback(async () => {
         if (!input.trim()) return;
 
         const userMsg: Message = { role: 'user', content: input };
@@ -128,7 +128,7 @@ export function useAIChat({
         } finally {
             setLoading(false);
         }
-    };
+    }, [input, selectedContext, editorContent, isWebMode, model, userId, onInsertContent, onReplaceContent]);
 
     const handleSuggestion = (type: 'translate' | 'improve' | 'summarize') => {
         let text = "";

@@ -2,7 +2,7 @@
 
 import { FileText, Layout, Search } from 'lucide-react';
 import { Page } from '@/lib/workspace';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 
 interface ContextPickerProps {
     isOpen: boolean;
@@ -34,9 +34,13 @@ export default function ContextPicker({
 
     if (!isOpen) return null;
 
-    const filteredPages = availablePages
-        .filter(p => !p.inTrash)
-        .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    // Optimize filtering with useMemo
+    const filteredPages = useMemo(() =>
+        availablePages
+            .filter(p => !p.inTrash)
+            .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase())),
+        [availablePages, searchQuery]
+    );
 
     return (
         <div className="absolute bottom-8 left-0 w-64 bg-[#1E1E1E] text-white rounded-lg shadow-2xl border border-gray-700 max-h-64 overflow-hidden z-50 flex flex-col animate-in fade-in zoom-in-95 duration-100">

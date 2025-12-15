@@ -39,6 +39,7 @@ export interface Page {
     // Organization
     section?: 'private' | 'workspace';
     createdBy?: string;
+    order?: number;
 
     // Database Fields
     type: 'page' | 'database';
@@ -147,7 +148,8 @@ export const createPage = async (
         fullWidth: false,
         smallText: false,
         locked: false,
-        inTrash: false
+        inTrash: false,
+        order: new Date().getTime() // Initial order by creation time
     };
     await setDoc(pageRef, newPage);
     return newPage;
@@ -195,6 +197,15 @@ export async function getPage(pageId: string): Promise<Page | null> {
 export async function updatePage(pageId: string, data: Partial<Page>) {
     const docRef = doc(db, "pages", pageId);
     await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+}
+
+export async function movePage(pageId: string, newParentId: string | null, newOrder: number) {
+    const docRef = doc(db, "pages", pageId);
+    await updateDoc(docRef, {
+        parentId: newParentId,
+        order: newOrder,
+        updatedAt: serverTimestamp()
+    });
 }
 
 export async function deletePage(pageId: string) {
