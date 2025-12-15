@@ -3,65 +3,61 @@ import crypto from 'crypto';
 // ENCRYPTION_KEY must be 32 bytes (64 hex characters)
 // Generate with: openssl rand -hex 32
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
-
-if (!ENCRYPTION_KEY) {
-    throw new Error('ENCRYPTION_KEY is not set in environment variables');
-}
-
-if (ENCRYPTION_KEY.length !== 64) {
-    throw new Error('ENCRYPTION_KEY must be 64 hex characters (32 bytes)');
-}
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 
 /**
- * Encrypts a plaintext string using AES-256-GCM
- * @param text - The plaintext to encrypt
- * @returns Encrypted string in format: iv:authTag:encrypted
+ * Get encryption key from environment
+ */
+function getEncryptionKey(): string {
+    const key = process.env.ENCRYPTION_KEY;
+    if (!key) {
+        throw new Error('ENCRYPTION_KEY is not set in environment variables');
+    }
+    if (key.length !== 64) {
+        throw new Error('ENCRYPTION_KEY must be 64 hex characters (32 bytes)');
+    }
+    return key;
+}
+
+/**
+ * Encrypts a string using AES-256-GCM
+ * @param text - Plain text to encrypt
+ * @returns Encrypted data in format: iv:authTag:encryptedData (all hex encoded)
  */
 export function encrypt(text: string): string {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(
-        ALGORITHM,
-        Buffer.from(ENCRYPTION_KEY!, 'hex'),
-        iv
-    );
+    const key = getEncryptionKey();
+    const iv = randomBytes(16);
+    const cipher = createCipheriv(ALGORITHM, Buffer.from(key, 'hex'), iv);
 
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
     const authTag = cipher.getAuthTag();
 
-    // Format: iv:authTag:encrypted
-    return [
-        iv.toString('hex'),
-        authTag.toString('hex'),
-        encrypted
-    ].join(':');
+    // Return format: iv:authTag:encryptedData
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
 }
 
 /**
  * Decrypts an encrypted string
- * @param encryptedData - The encrypted string in format: iv:authTag:encrypted
- * @returns Decrypted plaintext
+ * @param encryptedData - Encrypted data in format: iv:authTag:encryptedData
+ * @returns Decrypted plain text
  */
 export function decrypt(encryptedData: string): string {
+    const key = getEncryptionKey();
     const parts = encryptedData.split(':');
 
     if (parts.length !== 3) {
         throw new Error('Invalid encrypted data format');
     }
 
-    const iv = Buffer.from(parts[0], 'hex');
-    const authTag = Buffer.from(parts[1], 'hex');
-    const encrypted = parts[2];
+    const [ivHex, authTagHex, encrypted] = parts;
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
 
-    const decipher = crypto.createDecipheriv(
-        ALGORITHM,
-        Buffer.from(ENCRYPTION_KEY!, 'hex'),
-        iv
-    );
-
+    const decipher = createDecipheriv(ALGORITHM, Buffer.from(key, 'hex'), iv);
     decipher.setAuthTag(authTag);
 
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
