@@ -4,7 +4,7 @@ import { CheckCheck, Copy, FileText } from 'lucide-react';
 import { memo } from 'react';
 
 interface ChatMessageProps {
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'system';
     content: string;
     reasoning?: string;
     onInsertContent: (content: string) => void;

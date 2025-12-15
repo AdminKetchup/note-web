@@ -49,12 +49,15 @@ export function useAIChat({
         setInput("");
         setLoading(true);
 
+        // Create placeholder for assistant message
+        const assistantMsgId = Date.now();
+        setMessages(prev => [...prev, { role: 'assistant', content: '', id: assistantMsgId }]);
+
         try {
             // Build context string WITH IDs
             let contextStr = "";
             if (selectedContext.length > 0) {
                 contextStr += "Context from referenced pages:\n";
-                // Improved mapping using explicit return and string concatenation
                 const formattedContext = selectedContext.map(p => {
                     return "- Page: " + p.title + " (ID: " + p.id + ") \n  Content: " + (p.content || "Empty");
                 });
@@ -62,7 +65,7 @@ export function useAIChat({
             }
             contextStr += `Current Editor Content: \n${editorContent.substring(0, 1000)}...\n\n`;
 
-            let finalPrompt = `${contextStr}User Query: ${userMsg.content} `;
+            let finalPrompt = `${contextStr}User Query: ${userMsg.content}`;
             if (isWebMode) {
                 finalPrompt += "\n\n[Instruction: The user has enabled Web Search Mode. Please use your internal knowledge base to act as if you are searching the web. Provide up-to-date, comprehensive information as if you just browsed the internet.]";
             }
@@ -82,15 +85,74 @@ export function useAIChat({
             
             Always aim for clarity and actionable information.`;
 
-            const { content, reasoning } = await generateAIContent(finalPrompt, sysPrompt, model, userId);
+            const messages = [
+                { role: 'system', content: sysPrompt },
+                { role: 'user', content: finalPrompt }
+            ];
 
-            // Parse Actions
-            let displayContent = content;
+            // === STREAMING ===
+            const response = await fetch('/api/ai/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages, model, userId })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to start streaming');
+            }
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedContent = '';
+
+            if (!reader) {
+                throw new Error('No response body');
+            }
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6).trim();
+
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const json = JSON.parse(data);
+
+                            if (json.error) {
+                                throw new Error(json.error);
+                            }
+
+                            if (json.content) {
+                                accumulatedContent += json.content;
+
+                                // Update message in real-time
+                                setMessages(prev => prev.map(msg =>
+                                    msg.id === assistantMsgId
+                                        ? { ...msg, content: accumulatedContent }
+                                        : msg
+                                ));
+                            }
+                        } catch (e) {
+                            // Skip invalid JSON
+                        }
+                    }
+                }
+            }
+
+            // Parse Actions from final content
+            let displayContent = accumulatedContent;
             const actionRegex = /:::action\s*({[\s\S]*?})\s*:::/g;
             let match;
             const actionsToExecute: AIAction[] = [];
 
-            while ((match = actionRegex.exec(content)) !== null) {
+            while ((match = actionRegex.exec(accumulatedContent)) !== null) {
                 try {
                     const actionJson = match[1];
                     const action = JSON.parse(actionJson);
@@ -114,17 +176,24 @@ export function useAIChat({
                 }
             }
 
-            setMessages(prev => [...prev, { role: 'assistant', content: displayContent, reasoning }]);
+            // Update final message
+            setMessages(prev => prev.map(msg =>
+                msg.id === assistantMsgId
+                    ? { ...msg, content: displayContent }
+                    : msg
+            ));
+
         } catch (e: any) {
             console.error("AI Generation Failed", e);
             const errorMessage = e?.message || "알 수 없는 오류가 발생했습니다.";
             toast.error("AI 응답 생성 실패", {
                 description: errorMessage
             });
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: "죄송합니다. 오류가 발생했습니다. API 키가 설정되어 있는지 확인해주세요."
-            }]);
+            setMessages(prev => prev.map(msg =>
+                msg.id === assistantMsgId
+                    ? { ...msg, content: "죄송합니다. 오류가 발생했습니다. API 키가 설정되어 있는지 확인해주세요." }
+                    : msg
+            ));
         } finally {
             setLoading(false);
         }

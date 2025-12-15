@@ -6,9 +6,10 @@
  * Chat message structure
  */
 export interface Message {
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'system';
     content: string;
     reasoning?: string;
+    id?: number; // For streaming updates
 }
 
 /**
