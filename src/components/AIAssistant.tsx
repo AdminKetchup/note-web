@@ -79,7 +79,10 @@ export default function AIAssistant({ onInsertContent, onReplaceContent, editorC
             if (selectedContext.length > 0) {
                 contextStr += "Context from referenced pages:\n";
                 // INCLUDE PAGE ID HERE
-                contextStr += selectedContext.map(p => `- Page: ${ p.title } (ID: ${ p.id }) \n  Content: ${ p.content || "Empty" } `).join("\n\n") + "\n\n";
+                const formattedContext = selectedContext.map(p => {
+                    return `- Page: ${ p.title } (ID: ${ p.id }) \n  Content: ${ p.content || "Empty" } `;
+                });
+                contextStr += formattedContext.join("\n\n") + "\n\n";
             }
             contextStr += `Current Editor Content: \n${ editorContent.substring(0, 1000) }...\n\n`;
 
