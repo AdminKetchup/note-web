@@ -4,13 +4,13 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
     try {
         const { messages, prompt, model } = await req.json();
-        // Prefer key from client header, fallback to server env (optional)
-        const apiKey = req.headers.get("X-OpenRouter-Key") || process.env.OPENROUTER_API_KEY;
+        // API key from server environment only (secure)
+        const apiKey = process.env.OPENROUTER_API_KEY;
 
         if (!apiKey) {
             return NextResponse.json(
-                { error: 'OpenRouter API Key missing. Please check Settings.' },
-                { status: 401 }
+                { error: 'OpenRouter API Key not configured on server. Please add OPENROUTER_API_KEY to .env.local' },
+                { status: 500 }
             );
         }
 
