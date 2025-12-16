@@ -1,17 +1,32 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Page, createPage, updatePage } from "@/lib/workspace";
 import { Plus, Hash, Type, Calendar, ChevronDown, FileText, MoreHorizontal, CheckSquare, Link as LinkIcon, Mail, Phone, Folder, Calculator, GitBranch, Sigma, Table, BarChart3, Grid, Trello, List as ListIcon, CalendarDays, GanttChartSquare } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PropertyRenderer from "./PropertyRenderer";
-import ChartView from "./ChartView";
-import GalleryView from "./GalleryView";
-import BoardView from "./BoardView";
-import ListView from "./ListView";
-import CalendarView from "./CalendarView";
-import TimelineView from "./TimelineView";
+
+// Lazy load heavy view components to reduce initial bundle size
+const ChartView = dynamic(() => import("./ChartView"), {
+    loading: () => <div className="p-4 text-center text-gray-500">Loading chart...</div>
+});
+const GalleryView = dynamic(() => import("./GalleryView"), {
+    loading: () => <div className="p-4 text-center text-gray-500">Loading gallery...</div>
+});
+const BoardView = dynamic(() => import("./BoardView"), {
+    loading: () => <div className="p-4 text-center text-gray-500">Loading board...</div>
+});
+const ListView = dynamic(() => import("./ListView"), {
+    loading: () => <div className="p-4 text-center text-gray-500">Loading list...</div>
+});
+const CalendarView = dynamic(() => import("./CalendarView"), {
+    loading: () => <div className="p-4 text-center text-gray-500">Loading calendar...</div>
+});
+const TimelineView = dynamic(() => import("./TimelineView"), {
+    loading: () => <div className="p-4 text-center text-gray-500">Loading timeline...</div>
+});
 import DatabaseControls from "./DatabaseControls";
 import { FilterGroup, applyFilters } from "@/lib/filter-engine";
 import { Sort, applySorts } from "@/lib/sort-engine";
