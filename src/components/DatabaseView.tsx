@@ -40,6 +40,31 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
     // Ensure properties is defined
     const columns = parentPage.properties || [];
 
+    // Auto-create Select property for Board view if none exists
+    useEffect(() => {
+        if (currentView === 'board') {
+            const hasSelectProperty = columns.some(col => col.type === 'select');
+
+            if (!hasSelectProperty && columns.length >= 0) {
+                // Auto-create Status property for Board view
+                const statusProperty = {
+                    id: crypto.randomUUID(),
+                    name: 'Status',
+                    type: 'select' as const,
+                    options: [
+                        { id: crypto.randomUUID(), name: 'Todo', color: 'gray' },
+                        { id: crypto.randomUUID(), name: 'In Progress', color: 'blue' },
+                        { id: crypto.randomUUID(), name: 'Done', color: 'green' },
+                    ]
+                };
+
+                onUpdateParent({
+                    properties: [...columns, statusProperty]
+                });
+            }
+        }
+    }, [currentView, columns.length]); // Only run when view changes or columns added
+
     // Apply filters and sorts
     const filteredAndSortedPages = applySorts(applyFilters(childPages, filterGroup), sorts);
 
