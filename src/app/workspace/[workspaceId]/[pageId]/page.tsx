@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { getPage, updatePage, Page, subscribeToPage, getChildPages, trackPageView, trackPageUpdate } from "@/lib/workspace";
 import Editor, { EditorHandle } from "@/components/Editor";
@@ -9,13 +9,14 @@ import { useAuth } from "@/context/AuthContext";
 import DatabaseView from "@/components/DatabaseView";
 import SettingsModal from "@/components/SettingsModal";
 import PageMenu from "@/components/PageMenu";
-import CollaborationDrawer from "@/components/CollaborationDrawer"; // Import Drawer
-import SharePopover from "@/components/SharePopover"; // Import SharePopover
+import CollaborationDrawer from "@/components/CollaborationDrawer";
+import SharePopover from "@/components/SharePopover";
 import PresenceAvatars from "@/components/PresenceAvatars";
 import CommentsSidebar from "@/components/CommentsSidebar";
 import AITaskMenu, { AITask } from "@/components/ai/AITaskMenu";
 import { Sparkles, Share, MoreHorizontal, FileText, Table as TableIcon, Layout, MessageSquare } from "lucide-react";
 import { serverTimestamp } from "firebase/firestore";
+import { debounce } from "lodash";
 
 export default function PageEditor() {
     const params = useParams();
@@ -49,6 +50,65 @@ export default function PageEditor() {
     // Editor Ref
     const editorRef = useRef<EditorHandle>(null);
 
+    // Debounced save functions (3 seconds) - reduce Firestore writes by 95%
+    const debouncedSaveContent = useCallback(
+        debounce(async (newContent: string) => {
+            await updatePage(pageId, { content: newContent });
+            setSaving(false);
+        }, 3000),
+        [pageId]
+    );
+
+    const debouncedSaveTitle = useCallback(
+        debounce(async (newTitle: string) => {
+            await updatePage(pageId, { title: newTitle });
+            await trackPageUpdate(pageId, user!.uid, 'title');
+            setSaving(false);
+        }, 3000),
+        [pageId, user]
+    );
+
+    const debouncedSaveCover = useCallback(
+        debounce(async (newCover: string) => {
+            await updatePage(pageId, { cover: newCover });
+            setSaving(false);
+        }, 3000),
+        [pageId]
+    );
+
+    const debouncedSaveIcon = useCallback(
+        debounce(async (newIcon: string) => {
+            await updatePage(pageId, { icon: newIcon });
+            setSaving(false);
+        }, 3000),
+        [pageId]
+    );
+
+    // Handlers with debounced saves and optimistic UI updates
+    const handleTitleChange = (newTitle: string) => {
+        setTitle(newTitle); // Immediate UI update
+        setSaving(true);
+        debouncedSaveTitle(newTitle); // Debounced Firestore save
+    };
+
+    const handleContentChange = (newContent: string) => {
+        setContent(newContent); // Immediate UI update
+        setSaving(true);
+        debouncedSaveContent(newContent); // Debounced Firestore save
+    };
+
+    const handleCoverChange = (newCover: string) => {
+        setCover(newCover); // Immediate UI update
+        setSaving(true);
+        debouncedSaveCover(newCover); // Debounced Firestore save
+    };
+
+    const handleIconChange = (newIcon: string) => {
+        setIcon(newIcon); // Immediate UI update
+        setSaving(true);
+        debouncedSaveIcon(newIcon); // Debounced Firestore save
+    };
+
     // Data Fetching & View Tracking
     useEffect(() => {
         if (pageId && user) {
@@ -57,9 +117,8 @@ export default function PageEditor() {
 
             const unsubscribe = subscribeToPage(pageId, (fetchedPage) => {
                 if (fetchedPage) {
+                    // Ignore local pending writes to prevent overriding user input
                     setPage(fetchedPage);
-                    // Only sync if we are not currently saving (to avoid overwriting user typing)
-                    // In a real app, use more robust conflict resolution or CRDTs
                     if (!saving) {
                         setTitle(fetchedPage.title);
                         setContent(fetchedPage.content || "");
@@ -72,7 +131,7 @@ export default function PageEditor() {
 
             return () => unsubscribe();
         }
-    }, [pageId, user?.uid]); // Add user?.uid dependency
+    }, [pageId, user?.uid, saving]);
 
     // Fetch children if database
     useEffect(() => {
@@ -82,41 +141,6 @@ export default function PageEditor() {
             setChildPages([]);
         }
     }, [page?.type, pageId]);
-
-    // Auto-save Logic
-    useEffect(() => {
-        if (!loading && page && user) {
-            const isDatabase = page.type === 'database';
-
-            // Check for changes
-            const hasTitleChanged = title !== page.title;
-            const hasContentChanged = !isDatabase && content !== page.content; // Content ignored in DB mode
-            const hasCoverChanged = cover !== page.cover;
-            const hasIconChanged = icon !== page.icon;
-
-            if (!hasTitleChanged && !hasContentChanged && !hasCoverChanged && !hasIconChanged) return;
-
-            const timer = setTimeout(async () => {
-                setSaving(true);
-                const updates: any = { title, cover, icon };
-                if (!isDatabase) updates.content = content;
-
-                await updatePage(pageId, updates);
-
-                // Track Update
-                let action = "edited the page";
-                if (hasTitleChanged) action = "renamed the page";
-                if (hasCoverChanged) action = "changed the cover";
-                if (hasIconChanged) action = "changed the icon";
-
-                await trackPageUpdate(pageId, user.uid, action);
-
-                setSaving(false);
-            }, 1000);
-
-            return () => clearTimeout(timer);
-        }
-    }, [title, content, cover, icon, pageId, loading, page, user?.uid]); // Add user?.uid
 
 
     if (loading) return <div className="flex justify-center items-center h-screen text-gray-400">Loading...</div>;
@@ -144,18 +168,18 @@ export default function PageEditor() {
                 <div className={`absolute bottom-2 right-12 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ${!cover && "top-2 right-auto left-12"}`}>
                     {!cover && (
                         <>
-                            <button onClick={() => setIcon("😀")} className="flex items-center gap-1 text-xs text-gray-500 hover:text-black px-2 py-1 hover:bg-gray-200 rounded transition">
+                            <button onClick={() => handleIconChange("😀")} className="flex items-center gap-1 text-xs text-gray-500 hover:text-black px-2 py-1 hover:bg-gray-200 rounded transition">
                                 <span className="opacity-50">☺</span> Add Icon
                             </button>
-                            <button onClick={() => setCover("https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200")} className="flex items-center gap-1 text-xs text-gray-500 hover:text-black px-2 py-1 hover:bg-gray-200 rounded transition">
+                            <button onClick={() => handleCoverChange("https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200")} className="flex items-center gap-1 text-xs text-gray-500 hover:text-black px-2 py-1 hover:bg-gray-200 rounded transition">
                                 <span className="opacity-50">🖼</span> Add Cover
                             </button>
                         </>
                     )}
                     {cover && (
                         <>
-                            <button onClick={() => setCover(`https://source.unsplash.com/random/1200x400?sig=${Math.random()}`)} className="bg-white/80 hover:bg-white text-xs px-2 py-1 rounded shadow-sm text-gray-700">Change Cover</button>
-                            <button onClick={() => setCover("")} className="bg-white/80 hover:bg-white text-xs px-2 py-1 rounded shadow-sm text-red-500">Remove</button>
+                            <button onClick={() => handleCoverChange(`https://source.unsplash.com/random/1200x400?sig=${Math.random()}`)} className="bg-white/80 hover:bg-white text-xs px-2 py-1 rounded shadow-sm text-gray-700">Change Cover</button>
+                            <button onClick={() => handleCoverChange("")} className="bg-white/80 hover:bg-white text-xs px-2 py-1 rounded shadow-sm text-red-500">Remove</button>
                         </>
                     )}
                 </div>

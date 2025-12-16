@@ -255,6 +255,11 @@ export function subscribeToWorkspacePages(workspaceId: string, callback: (pages:
 export function subscribeToPage(pageId: string, callback: (page: Page | null) => void) {
     const docRef = doc(db, "pages", pageId);
     return onSnapshot(docRef, (docSnap) => {
+        // Ignore local writes to prevent overwriting user input
+        if (docSnap.metadata.hasPendingWrites) {
+            return; // Skip local writes
+        }
+
         if (docSnap.exists()) {
             callback({ id: docSnap.id, ...docSnap.data() } as Page);
         } else {
