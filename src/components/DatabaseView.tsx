@@ -15,6 +15,7 @@ import TimelineView from "./TimelineView";
 import DatabaseControls from "./DatabaseControls";
 import { FilterGroup, applyFilters } from "@/lib/filter-engine";
 import { Sort, applySorts } from "@/lib/sort-engine";
+import PropertyMenu from "./database/PropertyMenu";
 
 interface DatabaseViewProps {
     workspaceId: string;
@@ -39,6 +40,9 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
 
     // Ensure properties is defined
     const columns = parentPage.properties || [];
+
+    // Property Menu state
+    const [activePropertyMenu, setActivePropertyMenu] = useState<string | null>(null);
 
     // Auto-create Select property for Board view if none exists
     useEffect(() => {
@@ -145,6 +149,51 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
         await createPage(workspaceId, parentPage.id, "Untitled", 'page', parentPage.section, parentPage.createdBy);
     };
 
+    // Property Management Functions
+    const updateProperty = async (propId: string, updates: Partial<any>) => {
+        const updatedColumns = columns.map(col =>
+            col.id === propId ? { ...col, ...updates } : col
+        );
+        await onUpdateParent({ properties: updatedColumns });
+        setActivePropertyMenu(null);
+    };
+
+    const deleteProperty = async (propId: string) => {
+        if (confirm('Delete this property? All data in this column will be lost.')) {
+            const updatedColumns = columns.filter(col => col.id !== propId);
+            await onUpdateParent({ properties: updatedColumns });
+            setActivePropertyMenu(null);
+        }
+    };
+
+    const duplicateProperty = async (propId: string) => {
+        const prop = columns.find(c => c.id === propId);
+        if (prop) {
+            const newProp = {
+                ...prop,
+                id: crypto.randomUUID(),
+                name: `${prop.name} (copy)`
+            };
+            await onUpdateParent({ properties: [...columns, newProp] });
+            setActivePropertyMenu(null);
+        }
+    };
+
+    const moveProperty = async (propId: string, direction: 'left' | 'right') => {
+        const index = columns.findIndex(c => c.id === propId);
+        if (index === -1) return;
+
+        const newIndex = direction === 'left' ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= columns.length) return;
+
+        const reordered = [...columns];
+        const [moved] = reordered.splice(index, 1);
+        reordered.splice(newIndex, 0, moved);
+
+        await onUpdateParent({ properties: reordered });
+        setActivePropertyMenu(null);
+    };
+
     return (
         <div className="w-full overflow-x-auto pb-20 pl-4 md:pl-0">
             {/* Header / Controls */}
@@ -228,11 +277,26 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
                                 else if (col.type === 'rollup') Icon = Sigma;
 
                                 return (
-                                    <th key={col.id} className="w-[180px] min-w-[100px] text-left py-2 px-3 font-normal text-xs text-gray-500 border-r border-gray-200 dark:border-gray-800/50 group">
-                                        <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#2C2C2C] p-1 rounded -ml-1">
+                                    <th key={col.id} className="w-[180px] min-w-[100px] text-left py-2 px-3 font-normal text-xs text-gray-500 border-r border-gray-200 dark:border-gray-800/50 group relative">
+                                        <div
+                                            onClick={() => setActivePropertyMenu(activePropertyMenu === col.id ? null : col.id)}
+                                            className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#2C2C2C] p-1 rounded -ml-1"
+                                        >
                                             <Icon size={14} />
                                             {col.name}
                                         </div>
+
+                                        {/* Property Menu */}
+                                        {activePropertyMenu === col.id && (
+                                            <PropertyMenu
+                                                property={col}
+                                                onUpdate={(updates) => updateProperty(col.id, updates)}
+                                                onDelete={() => deleteProperty(col.id)}
+                                                onDuplicate={() => duplicateProperty(col.id)}
+                                                onMove={(direction) => moveProperty(col.id, direction)}
+                                                onClose={() => setActivePropertyMenu(null)}
+                                            />
+                                        )}
                                     </th>
                                 );
                             })}
