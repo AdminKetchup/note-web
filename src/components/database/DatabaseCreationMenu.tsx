@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { X, Plus, Sparkles, FileUp, Link as LinkIcon, ArrowRight } from 'lucide-react';
 import { DATABASE_TEMPLATES, DatabaseTemplate } from '@/lib/database-templates';
 import TemplateCard from '@/components/database/TemplateCard';
@@ -21,11 +21,203 @@ export default function DatabaseCreationMenu({
     onClose
 }: DatabaseCreationMenuProps) {
     const [pasteInput, setPasteInput] = useState('');
+    const [showAIBuilder, setShowAIBuilder] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (!isOpen) return null;
 
     // Show top 3 suggested templates (excluding empty)
     const suggestedTemplates = DATABASE_TEMPLATES.filter(t => t.id !== 'empty').slice(0, 3);
+
+    /**
+     * Handle AI Database Builder
+     */
+    const handleAIBuild = async () => {
+        if (!aiPrompt.trim()) return;
+
+        setIsGenerating(true);
+        try {
+            // Call AI API to generate database structure
+            const response = await fetch('/api/ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: `Create a database structure for: ${aiPrompt}. Return JSON with columns array, each having: name, type (text/number/select/date/checkbox), and optionaldefault values.`,
+                }),
+            });
+
+            const data = await response.json();
+
+            // Parse AI response and create database
+            const aiTemplate: DatabaseTemplate = {
+                id: 'ai-generated',
+                name: aiPrompt,
+                description: 'AI-generated database',
+                icon: '🤖',
+                color: 'purple',
+                properties: parseAIColumns(data.content || data.response),
+            };
+
+            onSelectTemplate(aiTemplate);
+            onClose();
+        } catch (error) {
+            console.error('AI generation failed:', error);
+            alert('Failed to generate database. Creating empty database instead.');
+            onCreateEmpty();
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    /**
+     * Handle CSV Import
+     */
+    const handleCSVImport = async (file: File) => {
+        try {
+            const text = await file.text();
+            const lines = text.split('\n').filter(line => line.trim());
+
+            if (lines.length === 0) {
+                alert('CSV file is empty');
+                return;
+            }
+
+            // Parse CSV header
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+
+            // Parse rows
+            const rows = lines.slice(1, Math.min(lines.length, 11)).map(line => {
+                const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+                const row: any = {};
+                headers.forEach((header, index) => {
+                    row[header] = values[index] || '';
+                });
+                return row;
+            });
+
+            // Infer column types
+            const properties = headers.map((header, index) => {
+                const sampleValue = rows[0]?.[header];
+                let type: 'text' | 'number' | 'select' | 'date' | 'checkbox' = 'text';
+
+                if (!isNaN(Number(sampleValue))) {
+                    type = 'number';
+                } else if (sampleValue?.toLowerCase() === 'true' || sampleValue?.toLowerCase() === 'false') {
+                    type = 'checkbox';
+                } else if (/^\d{4}-\d{2}-\d{2}/.test(sampleValue)) {
+                    type = 'date';
+                }
+
+                return {
+                    id: `csv-col-${index}`,
+                    name: header,
+                    type,
+                };
+            });
+
+            const csvTemplate: DatabaseTemplate = {
+                id: 'csv-import',
+                name: file.name.replace('.csv', ''),
+                description: `Imported from ${file.name}`,
+                icon: '📊',
+                color: 'green',
+                properties,
+            };
+
+            onSelectTemplate(csvTemplate);
+            onClose();
+        } catch (error) {
+            console.error('CSV import failed:', error);
+            alert('Failed to import CSV file');
+        }
+    };
+
+    /**
+     * Parse AI response to properties
+     */
+    const parseAIColumns = (aiResponse: string) => {
+        try {
+            const parsed = JSON.parse(aiResponse);
+            return (parsed.columns || parsed.properties || []).map((col: any, index: number) => ({
+                id: col.id || `ai-prop-${index}`,
+                name: col.name,
+                type: col.type,
+                options: col.options,
+            }));
+        } catch {
+            // Fallback: create basic properties
+            return [
+                { id: 'name', name: 'Name', type: 'text' },
+                {
+                    id: 'status', name: 'Status', type: 'select', options: [
+                        { id: 'todo', name: 'To Do', color: 'gray' },
+                        { id: 'done', name: 'Done', color: 'green' },
+                    ]
+                },
+                { id: 'date', name: 'Date', type: 'date' },
+            ];
+        }
+    };
+
+    /**
+     * AI Builder Modal
+     */
+    if (showAIBuilder) {
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAIBuilder(false)}>
+                <div
+                    className="bg-white dark:bg-[#1C1C1C] rounded-lg shadow-2xl w-full max-w-md p-6"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                            <Sparkles className="text-purple-500" size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold">Build with AI</h2>
+                            <p className="text-sm text-gray-500">Describe your database and AI will create it</p>
+                        </div>
+                    </div>
+
+                    <textarea
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        placeholder="Example: Create a task tracker with name, priority, status, due date, and assignee"
+                        className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg mb-4 min-h-[120px] resize-none"
+                        autoFocus
+                    />
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowAIBuilder(false)}
+                            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleAIBuild}
+                            disabled={!aiPrompt.trim() || isGenerating}
+                            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles size={16} />
+                                    Generate
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -78,24 +270,35 @@ export default function DatabaseCreationMenu({
                         </button>
 
                         <button
+                            onClick={() => setShowAIBuilder(true)}
                             className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2C2C2C] rounded-lg transition group"
                         >
                             <div className="w-5 h-5 flex items-center justify-center">
                                 <Sparkles size={16} className="text-purple-500" />
                             </div>
                             <span className="flex-1 text-left">Build with AI</span>
-                            <span className="text-xs text-gray-400">Coming soon</span>
+                            <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full">New</span>
                         </button>
 
                         <button
+                            onClick={() => fileInputRef.current?.click()}
                             className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2C2C2C] rounded-lg transition group"
                         >
                             <div className="w-5 h-5 flex items-center justify-center">
                                 <FileUp size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200" />
                             </div>
                             <span className="flex-1 text-left">Import CSV</span>
-                            <span className="text-xs text-gray-400">Coming soon</span>
                         </button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleCSVImport(file);
+                            }}
+                        />
                     </div>
 
                     {/* Divider */}
@@ -144,20 +347,6 @@ export default function DatabaseCreationMenu({
                             <ArrowRight size={14} />
                         </button>
                     </div>
-
-                    {/* Divider */}
-                    <div className="h-px bg-gray-200 dark:bg-gray-800" />
-
-                    {/* Link to Existing */}
-                    <button
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2C2C2C] rounded-lg transition group"
-                    >
-                        <div className="w-5 h-5 flex items-center justify-center">
-                            <LinkIcon size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200" />
-                        </div>
-                        <span className="flex-1 text-left">Link to existing data source</span>
-                        <span className="text-xs text-gray-400">Coming soon</span>
-                    </button>
                 </div>
             </div>
         </div>
