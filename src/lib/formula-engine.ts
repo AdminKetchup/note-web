@@ -85,8 +85,8 @@ function createFormulaContext(properties: PropertyMap) {
     pow: (base: number, exp: number) => Math.pow(Number(base), Number(exp)),
 
     // Text functions
-    concat: (...args: any[]) => args.map(String).join(''),
-    length: (str: any) => String(str || '').length,
+    concat: (...args: unknown[]) => args.map(String).join(''),
+    length: (str: unknown) => String(str || '').length,
     upper: (str: string) => String(str || '').toUpperCase(),
     lower: (str: string) => String(str || '').toLowerCase(),
     replace: (str: string, search: string, replacement: string) =>
@@ -132,18 +132,18 @@ function createFormulaContext(properties: PropertyMap) {
     },
 
     // Logic
-    if: (condition: any, trueValue: any, falseValue: any) =>
+    if: <T>(condition: unknown, trueValue: T, falseValue: T): T =>
       condition ? trueValue : falseValue,
-    and: (...args: any[]) => args.every(Boolean),
-    or: (...args: any[]) => args.some(Boolean),
-    not: (value: any) => !value,
-    empty: (value: any) =>
+    and: (...args: unknown[]) => args.every(Boolean),
+    or: (...args: unknown[]) => args.some(Boolean),
+    not: (value: unknown) => !value,
+    empty: (value: unknown) =>
       value === null || value === undefined || value === '' ||
       (Array.isArray(value) && value.length === 0),
 
     // Comparison
-    equal: (a: any, b: any) => a == b,
-    unequal: (a: any, b: any) => a != b,
+    equal: (a: unknown, b: unknown) => a == b,
+    unequal: (a: unknown, b: unknown) => a != b,
     larger: (a: number, b: number) => Number(a) > Number(b),
     largerEq: (a: number, b: number) => Number(a) >= Number(b),
     smaller: (a: number, b: number) => Number(a) < Number(b),

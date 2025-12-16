@@ -17,6 +17,18 @@ import { FilterGroup, applyFilters } from "@/lib/filter-engine";
 import { Sort, applySorts } from "@/lib/sort-engine";
 import PropertyMenu from "./database/PropertyMenu";
 import AddColumnModal from "./database/AddColumnModal";
+import { PropertyValue } from "@/lib/formula-engine";
+
+type Property = NonNullable<Page['properties']>[number];
+
+interface SavedView {
+    id: string;
+    name: string;
+    viewType: 'table' | 'list' | 'board' | 'gallery' | 'calendar' | 'timeline' | 'chart';
+    filters?: FilterGroup;
+    sorts?: Sort[];
+    isDefault?: boolean;
+}
 
 interface DatabaseViewProps {
     workspaceId: string;
@@ -98,7 +110,7 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
     };
 
     // Load saved view
-    const loadView = (view: any) => {
+    const loadView = (view: SavedView) => {
         setCurrentView(view.viewType);
         setFilterGroup(view.filters || { condition: 'AND', filters: [] });
         setSorts(view.sorts || []);
@@ -137,7 +149,7 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
         setShowAddColumnModal(false);
     }, [columns, onUpdateParent]);
 
-    const updateCellValue = useCallback(async (pageId: string, propertyId: string, value: any) => {
+    const updateCellValue = useCallback(async (pageId: string, propertyId: string, value: PropertyValue) => {
         const page = childPages.find(p => p.id === pageId);
         if (!page) return;
 
