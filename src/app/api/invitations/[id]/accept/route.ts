@@ -3,12 +3,24 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { cookies } from 'next/headers';
 import { auth } from '@/lib/firebase';
+import { apiRateLimiter, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(
     req: Request,
     context: { params: Promise<{ id: string }> }
 ) {
     try {
+        // Rate limiting: 10 requests per minute
+        const clientIp = getClientIp(req);
+        const allowed = apiRateLimiter.check(10, clientIp);
+
+        if (!allowed) {
+            return NextResponse.json(
+                { error: 'Too many requests. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
         const { id } = await context.params;
 
         // Get user from session/cookie

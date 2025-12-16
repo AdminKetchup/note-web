@@ -2,12 +2,24 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { cookies } from 'next/headers';
+import { apiRateLimiter, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(
     req: Request,
     context: { params: Promise<{ id: string }> }
 ) {
     try {
+        // Rate limiting
+        const clientIp = getClientIp(req);
+        const allowed = apiRateLimiter.check(10, clientIp);
+
+        if (!allowed) {
+            return NextResponse.json(
+                { error: 'Too many requests' },
+                { status: 429 }
+            );
+        }
+
         const { id } = await context.params;
 
         // Get user from session
