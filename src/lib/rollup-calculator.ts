@@ -38,21 +38,28 @@ export async function calculateRollup(
             return rollupProperty.rollupFunction === 'count' ? 0 : 0;
         }
 
-        // 3. Fetch related pages
-        const relatedPages = await Promise.all(
-            relatedPageIds.map(async (id) => {
-                try {
-                    const pageDoc = await getDoc(doc(db, 'pages', id));
-                    if (pageDoc.exists()) {
-                        return { id: pageDoc.id, ...pageDoc.data() } as Page;
-                    }
-                    return null;
-                } catch (e) {
-                    console.error(`Failed to fetch page ${id}:`, e);
-                    return null;
-                }
-            })
-        );
+        // 3. Fetch related pages - OPTIMIZED: Batch fetch instead of N+1
+        // Split into chunks of 30 (Firestore 'in' query limit)
+        const relatedPages: Page[] = [];
+
+        for (let i = 0; i < relatedPageIds.length; i += 30) {
+            const chunk = relatedPageIds.slice(i, i + 30);
+
+            try {
+                const { collection, query, where, getDocs, documentId } = await import('firebase/firestore');
+                const q = query(
+                    collection(db, 'pages'),
+                    where(documentId(), 'in', chunk)
+                );
+
+                const snapshot = await getDocs(q);
+                snapshot.docs.forEach(doc => {
+                    relatedPages.push({ id: doc.id, ...doc.data() } as Page);
+                });
+            } catch (e) {
+                console.error(`Failed to fetch page chunk:`, e);
+            }
+        }
 
         const validPages = relatedPages.filter((p): p is Page => p !== null);
 

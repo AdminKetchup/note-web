@@ -89,6 +89,39 @@ export interface Page {
     isFavorite?: boolean;
 }
 
+// --- Simple Page Cache ---
+interface CacheEntry {
+    data: Page;
+    timestamp: number;
+}
+
+const pageCache = new Map<string, CacheEntry>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Clear expired cache entries
+ */
+function clearExpiredCache() {
+    const now = Date.now();
+    for (const [key, entry] of pageCache.entries()) {
+        if (now - entry.timestamp > CACHE_TTL) {
+            pageCache.delete(key);
+        }
+    }
+}
+
+/**
+ * Invalidate cache for a specific page
+ */
+function invalidatePageCache(pageId: string) {
+    pageCache.delete(pageId);
+}
+
+// Clear expired cache every minute
+if (typeof window !== 'undefined') {
+    setInterval(clearExpiredCache, 60 * 1000);
+}
+
 // --- Workspaces ---
 
 export async function createWorkspace(ownerId: string, name: string): Promise<Workspace> {
@@ -209,18 +242,34 @@ export async function getChildPages(parentId: string): Promise<Page[]> {
     return pages;
 }
 
+// Get a single page by ID with caching
 export async function getPage(pageId: string): Promise<Page | null> {
+    // Check cache first
+    const cached = pageCache.get(pageId);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+    }
+
     const docRef = doc(db, "pages", pageId);
     const snap = await getDoc(docRef);
     if (snap.exists()) {
-        return { id: snap.id, ...snap.data() } as Page;
+        const page = { id: snap.id, ...snap.data() } as Page;
+        // Store in cache
+        pageCache.set(pageId, { data: page, timestamp: Date.now() });
+        return page;
     }
     return null;
 }
 
-export async function updatePage(pageId: string, data: Partial<Page>) {
+export async function updatePage(pageId: string, data: Partial<Page>): Promise<void> {
     const docRef = doc(db, "pages", pageId);
-    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+    await updateDoc(docRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+    });
+
+    // Invalidate cache for updated page
+    invalidatePageCache(pageId);
 }
 
 export async function movePage(pageId: string, newParentId: string | null, newOrder: number) {
