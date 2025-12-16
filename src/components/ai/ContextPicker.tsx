@@ -34,13 +34,25 @@ export default function ContextPicker({
 
     if (!isOpen) return null;
 
-    // Optimize filtering with useMemo
-    const filteredPages = useMemo(() =>
-        availablePages
-            .filter(p => !p.inTrash)
-            .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase())),
-        [availablePages, searchQuery]
-    );
+    // Optimize filtering with useMemo and safety checks
+    const filteredPages = useMemo(() => {
+        if (!availablePages || !Array.isArray(availablePages)) {
+            return [];
+        }
+
+        try {
+            return availablePages
+                .filter(p => p && !p.inTrash)
+                .filter(p => {
+                    const title = p.title || '';
+                    const query = searchQuery || '';
+                    return title.toLowerCase().includes(query.toLowerCase());
+                });
+        } catch (error) {
+            console.error('Error filtering pages:', error);
+            return [];
+        }
+    }, [availablePages, searchQuery]);
 
     return (
         <div className="absolute bottom-8 left-0 w-64 bg-[#1E1E1E] text-white rounded-lg shadow-2xl border border-gray-700 max-h-64 overflow-hidden z-50 flex flex-col animate-in fade-in zoom-in-95 duration-100">
@@ -68,7 +80,11 @@ export default function ContextPicker({
                     filteredPages.map(page => (
                         <button
                             key={page.id}
-                            onClick={() => onSelect(page)}
+                            onClick={() => {
+                                if (page && page.id) {
+                                    onSelect(page);
+                                }
+                            }}
                             className="w-full text-left px-3 py-2 hover:bg-[#2C2C2C] text-sm flex items-center gap-2.5 transition-colors group"
                         >
                             <div className="w-5 h-5 flex items-center justify-center text-base bg-[#2C2C2C] group-hover:bg-[#333] rounded-sm transition-colors">
