@@ -145,72 +145,35 @@ export default function SharePopover({ isOpen, onClose, workspaceId, pageUrl, al
                                     </div>
                                 )}
                                 <div>
-                                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                        {m.nickname || m.email?.split('@')[0]}
-                                    </div>
-                                    <div className="text-xs text-gray-500">{m.email}</div>
-                                </div>
-                            </div>
-                            <div className="text-xs text-gray-400 flex items-center gap-1 cursor-pointer hover:text-gray-600 dark:hover:text-gray-200">
-                                Full access <ChevronDown size={12} />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* General Access */}
-                <div className="border-t border-gray-100 dark:border-gray-800 pt-4 pb-2">
-                    <div className="text-xs font-semibold text-gray-500 mb-2">General access</div>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gray-100 dark:bg-[#2C2C2C] rounded-md flex items-center justify-center text-gray-500">
-                                <Key size={14} className="fill-current" />
-                            </div>
-                            <div>
-                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1 cursor-pointer">
-                                    Only people invited <ChevronDown size={12} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer Actions */}
-                <div className="border-t border-gray-100 dark:border-gray-800 pt-3 flex items-center justify-between">
-                    <button className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-black dark:hover:text-white transition-colors">
-                        <Globe size={12} /> Learn about sharing
-                    </button>
-                    <button
-                        onClick={handleCopyLink}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#2C2C2C] text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#2C2C2C] text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors"
                     >
-                        <Copy size={14} /> Copy link
-                    </button>
-                </div>
-            </div>
+                                    <Copy size={14} /> Copy link
+                                </button>
+                            </div>
+                        </div>
 
-            {/* Key Icon from lucide-react doesn't look exactly like lock, using Lock if preferred, but Key was in import */}
+            {/* Key Icon from lucide-react doesn't look exactly like lock, using Lock if preferred, but Key was in import */ }
         </div>
-    );
+                );
 }
 
-function Key({ size, className }: { size: number, className?: string }) {
+                function Key({size, className}: {size: number, className?: string }) {
     // Custom Lock Icon similar to the screenshot (padlock)
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-    )
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={size}
+                    height={size}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={className}
+                >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                )
 }
