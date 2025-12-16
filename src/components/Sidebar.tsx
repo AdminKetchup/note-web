@@ -13,6 +13,7 @@ import SettingsModal from "./SettingsModal";
 import SearchModal from "./SearchModal";
 import TemplatePicker from "./TemplatePicker";
 import TemplateGallery from "./database/TemplateGallery";
+import DatabaseCreationMenu from "./database/DatabaseCreationMenu";
 import { Template, TEMPLATES, renderTemplate } from "@/lib/templates";
 import { DatabaseTemplate, DATABASE_TEMPLATES, createDatabaseFromTemplate } from "@/lib/database-templates";
 import { toast } from "sonner";
@@ -125,6 +126,7 @@ export default function Sidebar({ workspaceId }: { workspaceId: string }) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
+    const [isDatabaseCreationMenuOpen, setIsDatabaseCreationMenuOpen] = useState(false);
     const [isDatabaseTemplatePickerOpen, setIsDatabaseTemplatePickerOpen] = useState(false);
     const [pendingSection, setPendingSection] = useState<'private' | 'workspace'>('workspace');
     const [isTrashOpen, setIsTrashOpen] = useState(false);
@@ -363,6 +365,24 @@ export default function Sidebar({ workspaceId }: { workspaceId: string }) {
         setIsDatabaseTemplatePickerOpen(false);
     };
 
+    const handleCreateEmptyDatabase = async () => {
+        const newPage = await createPage(
+            workspaceId,
+            null,
+            'Untitled',
+            'database',
+            pendingSection,
+            user?.uid
+        );
+
+        toast.success('📋 Empty database created!', {
+            description: 'Start building your database',
+            duration: 2000
+        });
+
+        router.push(`/workspace/${workspaceId}/${newPage.id}`);
+    };
+
     const handleRestore = async (pageId: string) => {
         await updatePage(pageId, { inTrash: false, trashDate: null });
         if (selectedTrash.has(pageId)) {
@@ -507,7 +527,7 @@ export default function Sidebar({ workspaceId }: { workspaceId: string }) {
                     <FileText size={16} className="text-blue-500" /> <span className="font-medium text-gray-900 dark:text-gray-200">New from Template</span>
                 </button>
                 <button
-                    onClick={() => { setPendingSection('workspace'); setIsDatabaseTemplatePickerOpen(true); }}
+                    onClick={() => { setPendingSection('workspace'); setIsDatabaseCreationMenuOpen(true); }}
                     className="flex items-center gap-3 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#2C2C2C] rounded-md transition"
                 >
                     <Layout size={16} className="text-purple-500" /> <span className="font-medium text-gray-900 dark:text-gray-200">New Database</span>
@@ -715,6 +735,16 @@ export default function Sidebar({ workspaceId }: { workspaceId: string }) {
                 isOpen={isTemplatePickerOpen}
                 onSelect={handleTemplateSelect}
                 onClose={() => setIsTemplatePickerOpen(false)}
+            />
+            <DatabaseCreationMenu
+                isOpen={isDatabaseCreationMenuOpen}
+                onCreateEmpty={handleCreateEmptyDatabase}
+                onSelectTemplate={handleDatabaseTemplateSelect}
+                onShowAllTemplates={() => {
+                    setIsDatabaseCreationMenuOpen(false);
+                    setIsDatabaseTemplatePickerOpen(true);
+                }}
+                onClose={() => setIsDatabaseCreationMenuOpen(false)}
             />
             <TemplateGallery
                 isOpen={isDatabaseTemplatePickerOpen}
