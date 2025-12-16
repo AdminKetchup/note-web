@@ -259,3 +259,5 @@ export function ShareDialog({ pageId, isOpen, onClose }: ShareDialogProps) {
         </>
     );
 }
+
+export default ShareDialog;

@@ -1,179 +1,92 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { X, Copy, Globe, ChevronDown, Check, User } from "lucide-react";
-import { addMemberToWorkspace, getWorkspaceMembers } from "@/lib/workspace";
-import { useAuth } from "@/context/AuthContext";
+import { useState } from "react";
+import { Copy, X } from "lucide-react";
+import { toast } from "sonner";
+import { ShareDialog } from "./ShareDialog";
 
 interface SharePopoverProps {
     isOpen: boolean;
     onClose: () => void;
     workspaceId: string;
     pageUrl: string;
-    align?: 'left' | 'right';
 }
 
-export default function SharePopover({ isOpen, onClose, workspaceId, pageUrl, align = 'right' }: SharePopoverProps) {
-    const { user } = useAuth();
-    const [email, setEmail] = useState("");
-    const [members, setMembers] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [inviteStatus, setInviteStatus] = useState("");
-    const popoverRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (isOpen) {
-            loadMembers();
-        }
-    }, [isOpen]);
-
-    // Close on click outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
-                onClose();
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [isOpen, onClose]);
-
-    const loadMembers = async () => {
-        setLoading(true);
-        try {
-            const list = await getWorkspaceMembers(workspaceId);
-            setMembers(list);
-        } catch (e) {
-            console.error(e);
-        }
-        setLoading(false);
-    };
-
-    const handleInvite = async () => {
-        if (!email) return;
-        setInviteStatus("Inviting...");
-        try {
-            await addMemberToWorkspace(workspaceId, email);
-            setInviteStatus("Invited!");
-            setEmail("");
-            loadMembers();
-            setTimeout(() => setInviteStatus(""), 2000);
-        } catch (e: any) {
-            setInviteStatus("Error: " + e.message);
-        }
-    };
-
-    const handleCopyLink = () => {
-        navigator.clipboard.writeText(pageUrl);
-        // Could add toast here
-    };
+export default function SharePopover({ isOpen, onClose, workspaceId, pageUrl }: SharePopoverProps) {
+    const [showFullDialog, setShowFullDialog] = useState(false);
 
     if (!isOpen) return null;
 
-    return (
-        <div
-            ref={popoverRef}
-            className={`absolute top-10 ${align === 'right' ? 'right-0' : 'left-0'} z-50 w-[420px] bg-white dark:bg-[#1C1C1C] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden animate-in fade-in zoom-in-95 duration-100`}
-        >
-            {/* Header Tabs */}
-            <div className="flex border-b border-gray-100 dark:border-gray-800">
-                <button className="px-4 py-3 text-sm font-medium border-b-2 border-black dark:border-white text-black dark:text-white">Share</button>
-                <button className="px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Publish</button>
-            </div>
+    const handleCopyLink = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(pageUrl);
+        toast.success("Link copied to clipboard!");
+    };
 
-            <div className="p-4">
-                {/* Invite Input */}
-                <div className="flex gap-2 mb-4">
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email or group, separated by commas"
-                        className="flex-1 px-3 py-1.5 bg-transparent border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:border-blue-500"
-                        onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
-                    />
+    const handleOpenDialog = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowFullDialog(true);
+    };
+
+    return (
+        <>
+            {/* Backdrop */}
+            <div
+                className="fixed inset-0 bg-transparent z-40"
+                onClick={onClose}
+            />
+
+            {/* Popover */}
+            <div
+                className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl z-50"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800">
+                    <h3 className="font-semibold text-sm">Share</h3>
                     <button
-                        onClick={handleInvite}
-                        disabled={!email}
-                        className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onClose();
+                        }}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition"
                     >
-                        Invite
+                        <X size={14} />
                     </button>
                 </div>
-                {inviteStatus && <div className="text-xs text-blue-500 mb-4 px-1">{inviteStatus}</div>}
 
-                {/* Member List */}
-                <div className="mb-4 max-h-[200px] overflow-y-auto space-y-3">
-                    {/* Current User (You) */}
-                    {user && (
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                {user.photoURL ? (
-                                    <img src={user.photoURL} className="w-8 h-8 rounded-full" alt="You" />
-                                ) : (
-                                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                        {user.displayName?.[0] || "U"}
-                                    </div>
-                                )}
-                                <div>
-                                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                        {user.displayName || "You"} <span className="text-gray-500">(You)</span>
-                                    </div>
-                                    <div className="text-xs text-gray-500">{user.email}</div>
-                                </div>
-                            </div>
-                            <div className="text-xs text-gray-400 flex items-center gap-1 cursor-not-allowed">
-                                Full access <ChevronDown size={12} />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Other Members */}
-                    {members.filter(m => m.uid !== user?.uid).map(m => (
-                        <div key={m.uid} className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                {m.photoURL ? (
-                                    <img src={m.photoURL} className="w-8 h-8 rounded-full" alt="" />
-                                ) : (
-                                    <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                        {m.nickname?.[0] || m.email?.[0] || "U"}
-                                    </div>
-                                )}
-                                <div>
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#2C2C2C] text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors"
+                {/* Content */}
+                <div className="p-3 space-y-2">
+                    {/* Copy Link Button */}
+                    <button
+                        onClick={handleCopyLink}
+                        className="w-full flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition text-sm"
                     >
-                                    <Copy size={14} /> Copy link
-                                </button>
-                            </div>
-                        </div>
+                        <span>Copy link</span>
+                        <Copy size={14} />
+                    </button>
 
-            {/* Key Icon from lucide-react doesn't look exactly like lock, using Lock if preferred, but Key was in import */ }
-        </div>
-                );
-}
+                    {/* Invite People Button */}
+                    <button
+                        onClick={handleOpenDialog}
+                        className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition font-medium text-sm"
+                    >
+                        Invite people
+                    </button>
+                </div>
+            </div>
 
-                function Key({size, className}: {size: number, className?: string }) {
-    // Custom Lock Icon similar to the screenshot (padlock)
-    return (
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={size}
-                    height={size}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={className}
-                >
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-                )
+            {/* Full Share Dialog */}
+            {showFullDialog && (
+                <ShareDialog
+                    isOpen={showFullDialog}
+                    onClose={() => {
+                        setShowFullDialog(false);
+                        onClose();
+                    }}
+                    pageId={pageUrl.split('/').pop() || ''}
+                />
+            )}
+        </>
+    );
 }
