@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { cookies } from 'next/headers';
 
 export async function POST(
     req: Request,
@@ -9,66 +10,114 @@ export async function POST(
     try {
         const { id } = await context.params;
 
-        // Get invitation
-        const invitationRef = doc(db, 'invitations', id);
-        const invitationSnap = await getDoc(invitationRef);
+        // Get user from session/cookie
+        const cookieStore = await cookies();
+        const sessionCookie = cookieStore.get('session');
 
-        if (!invitationSnap.exists()) {
+        if (!sessionCookie) {
             return NextResponse.json(
-                { error: 'Invitation not found' },
-                { status: 404 }
+                { error: 'Unauthorized - Please log in' },
+                { status: 401 }
             );
         }
 
-        const invitation = invitationSnap.data();
+        // Extract userId from session (adjust based on your auth structure)
+        const userId = sessionCookie.value; // TODO: Parse actual auth token
 
-        // Check if expired
-        if (invitation.expiresAt.toDate() < new Date()) {
-            return NextResponse.json(
-                { error: 'Invitation expired' },
-                { status: 400 }
-            );
-        }
+        // Use transaction for atomicity
+        const result = await runTransaction(db, async (transaction) => {
+            const invitationRef = doc(db, 'invitations', id);
+            const invitationSnap = await transaction.get(invitationRef);
 
-        // Add user to page permissions
-        const pageRef = doc(db, 'pages', invitation.pageId);
-        const pageSnap = await getDoc(pageRef);
+            if (!invitationSnap.exists()) {
+                throw new Error('INVITATION_NOT_FOUND');
+            }
 
-        if (!pageSnap.exists()) {
-            return NextResponse.json(
-                { error: 'Page not found' },
-                { status: 404 }
-            );
-        }
+            const invitation = invitationSnap.data();
 
-        const pageData = pageSnap.data();
-        const permissions = pageData.permissions || {
-            owner: pageData.ownerId,
-            shared: {},
-            generalAccess: 'private'
-        };
+            // Verify email matches current user
+            const userDoc = await transaction.get(doc(db, 'users', userId));
+            if (!userDoc.exists()) {
+                throw new Error('USER_NOT_FOUND');
+            }
 
-        // Add user with invited role
-        // TODO: Get actual userId from auth
-        const userId = 'accepted-user-id';
-        permissions.shared[userId] = invitation.role;
+            const userEmail = userDoc.data()?.email?.toLowerCase();
+            if (userEmail !== invitation.email.toLowerCase()) {
+                throw new Error('EMAIL_MISMATCH');
+            }
 
-        await updateDoc(pageRef, { permissions });
+            // Check if already accepted
+            if (invitation.accepted) {
+                throw new Error('ALREADY_ACCEPTED');
+            }
 
-        // Mark invitation as accepted
-        await updateDoc(invitationRef, { status: 'accepted' });
+            // Check expiration (if field exists)
+            if (invitation.expiresAt) {
+                const expiryDate = invitation.expiresAt.toDate();
+                if (expiryDate < new Date()) {
+                    throw new Error('INVITATION_EXPIRED');
+                }
+            }
+
+            // Get page
+            const pageRef = doc(db, 'pages', invitation.pageId);
+            const pageSnap = await transaction.get(pageRef);
+
+            if (!pageSnap.exists()) {
+                throw new Error('PAGE_NOT_FOUND');
+            }
+
+            const pageData = pageSnap.data();
+            const permissions = pageData.permissions || {
+                owner: pageData.ownerId || pageData.createdBy,
+                shared: {},
+                generalAccess: 'private'
+            };
+
+            // Add user to page permissions
+            permissions.shared[userId] = invitation.role;
+            transaction.update(pageRef, { permissions });
+
+            // Mark invitation as accepted
+            transaction.update(invitationRef, {
+                accepted: true,
+                acceptedAt: serverTimestamp(),
+                acceptedBy: userId
+            });
+
+            return {
+                pageId: invitation.pageId,
+                role: invitation.role,
+                pageTitle: pageData.title
+            };
+        });
 
         return NextResponse.json({
             success: true,
-            pageId: invitation.pageId,
-            role: invitation.role
+            ...result
         });
 
     } catch (error: any) {
         console.error('Accept Invitation Error:', error);
+
+        // Specific error messages and status codes
+        const errorMap: Record<string, { message: string; status: number }> = {
+            'INVITATION_NOT_FOUND': { message: 'Invitation not found', status: 404 },
+            'USER_NOT_FOUND': { message: 'User not found', status: 404 },
+            'PAGE_NOT_FOUND': { message: 'Page not found or deleted', status: 404 },
+            'EMAIL_MISMATCH': { message: 'This invitation is not for your email', status: 403 },
+            'ALREADY_ACCEPTED': { message: 'Invitation already accepted', status: 409 },
+            'INVITATION_EXPIRED': { message: 'Invitation has expired', status: 410 },
+        };
+
+        const errorInfo = errorMap[error.message] || {
+            message: error.message || 'Internal Server Error',
+            status: 500
+        };
+
         return NextResponse.json(
-            { error: error.message || 'Internal Server Error' },
-            { status: 500 }
+            { error: errorInfo.message },
+            { status: errorInfo.status }
         );
     }
 }
