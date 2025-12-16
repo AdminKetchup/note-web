@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { onAuthStateChanged, User, signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { auth, googleProvider, db } from "@/lib/firebase";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 
 interface AuthContextType {
     user: User | null;
@@ -23,8 +24,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user);
+
+            // Sync user to Firestore users collection
+            if (user) {
+                try {
+                    const userRef = doc(db, "users", user.uid);
+                    const userSnap = await getDoc(userRef);
+
+                    // Create or update user document
+                    await setDoc(userRef, {
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName || user.email?.split('@')[0],
+                        photoURL: user.photoURL,
+                        lastLogin: serverTimestamp(),
+                        // Keep existing data if updating
+                        ...(userSnap.exists() ? {} : {
+                            createdAt: serverTimestamp(),
+                        })
+                    }, { merge: true });
+
+                    // Set session cookie (handled by server in production)
+                    // For now, we use Firebase Auth tokens
+                } catch (error) {
+                    console.error("Error syncing user to Firestore:", error);
+                }
+            }
+
             setLoading(false);
         });
         return () => unsubscribe();

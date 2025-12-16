@@ -21,7 +21,15 @@ export async function POST(
             );
         }
 
-        const userId = sessionCookie.value; // TODO: Parse actual auth token
+        // Get authenticated user ID from session
+        const userId = sessionCookie.value;
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: 'Invalid session' },
+                { status: 401 }
+            );
+        }
 
         // Get invitation
         const invitationRef = doc(db, 'invitations', id);

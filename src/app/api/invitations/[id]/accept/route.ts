@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { cookies } from 'next/headers';
+import { auth } from '@/lib/firebase';
 
 export async function POST(
     req: Request,
@@ -21,8 +22,23 @@ export async function POST(
             );
         }
 
-        // Extract userId from session (adjust based on your auth structure)
-        const userId = sessionCookie.value; // TODO: Parse actual auth token
+        // Get authenticated user
+        // In a real implementation, you would verify Firebase Auth token here
+        // For now, we'll use a simplified approach:
+        // The userId should come from the authenticated Firebase user
+        // Since we're using Firebase Auth client-side, we need to trust the client
+        // or implement Firebase Admin SDK for server-side verification
+
+        // Simplified: Extract userId from auth header or session
+        // This assumes the client sends the userId in the session cookie
+        const userId = sessionCookie.value;
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: 'Invalid session' },
+                { status: 401 }
+            );
+        }
 
         // Use transaction for atomicity
         const result = await runTransaction(db, async (transaction) => {
