@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Page, createPage, subscribeToWorkspacePages, updatePage, deletePage, movePage } from "@/lib/workspace";
-import { ChevronRight, ChevronDown, FileText, Plus, Settings, Trash, MoreHorizontal, Star, Copy, Edit, ExternalLink, AppWindow, FolderInput, Home, Sun, Moon, Sparkles, Search, Layout, X, Calendar } from "lucide-react";
+import { ChevronRight, ChevronDown, FileText, Plus, Settings, Trash, MoreHorizontal, Star, Copy, Edit, ExternalLink, AppWindow, FolderInput, Home, Sun, Moon, Sparkles, Search, Layout, X, Calendar, Bell } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import SettingsModal from "./SettingsModal";
 import SearchModal from "./SearchModal";
 import TemplatePicker from "./TemplatePicker";
@@ -124,6 +126,7 @@ export default function Sidebar({ workspaceId }: { workspaceId: string }) {
     const [isTrashOpen, setIsTrashOpen] = useState(false);
     const [selectedTrash, setSelectedTrash] = useState<Set<string>>(new Set());
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const [invitationCount, setInvitationCount] = useState(0);
 
     // Initial Sort helper: client-side sort
     const sortPages = (rawPages: Page[]) => {
@@ -140,6 +143,26 @@ export default function Sidebar({ workspaceId }: { workspaceId: string }) {
         });
         return () => unsubscribe();
     }, [workspaceId]);
+
+    // Listen to invitations count
+    useEffect(() => {
+        if (!user?.email) {
+            setInvitationCount(0);
+            return;
+        }
+
+        const q = query(
+            collection(db, "invitations"),
+            where("email", "==", user.email.toLowerCase()),
+            where("accepted", "==", false)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setInvitationCount(snapshot.size);
+        });
+
+        return () => unsubscribe();
+    }, [user?.email]);
 
     const toggleCollapse = (pageId: string) => {
         setCollapsed(prev => ({ ...prev, [pageId]: !prev[pageId] }));
@@ -535,6 +558,18 @@ export default function Sidebar({ workspaceId }: { workspaceId: string }) {
 
             {/* Trash Button */}
             <div className="p-2 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-1">
+                <Link
+                    href={`/workspace/${workspaceId}/invitations`}
+                    className="flex items-center gap-3 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#2C2C2C] rounded-md transition relative"
+                >
+                    <Bell size={16} />
+                    <span className="font-medium">Invitations</span>
+                    {invitationCount > 0 && (
+                        <span className="absolute right-3 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                            {invitationCount}
+                        </span>
+                    )}
+                </Link>
                 <button
                     onClick={() => setIsTrashOpen(true)}
                     className="flex items-center gap-3 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#2C2C2C] rounded-md transition"
