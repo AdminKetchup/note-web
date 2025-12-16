@@ -42,7 +42,7 @@ export interface Page {
     order?: number;
 
     // Database Fields
-    type: 'page' | 'database';
+    type: 'page' | 'database' | 'calendar';
     properties?: {
         id: string;
         name: string;
@@ -161,7 +161,7 @@ export const createPage = async (
     workspaceId: string,
     parentId: string | null = null,
     title: string = "Untitled",
-    type: 'page' | 'database' = 'page',
+    type: 'page' | 'database' | 'calendar' = 'page',
     section: 'private' | 'workspace' = 'workspace',
     userId: string = ""
 ) => {

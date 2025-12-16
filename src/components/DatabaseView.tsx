@@ -197,8 +197,23 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
         debouncedFirestoreUpdate(pageId, propertyId, value);
     }, [debouncedFirestoreUpdate]);
 
-    const handleNewRow = useCallback(async () => {
-        await createPage(workspaceId, parentPage.id, "Untitled", 'page', parentPage.section, parentPage.createdBy);
+    const [showNewRowMenu, setShowNewRowMenu] = useState(false);
+    const newRowMenuRef = useRef<HTMLDivElement>(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (newRowMenuRef.current && !newRowMenuRef.current.contains(event.target as Node)) {
+                setShowNewRowMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleNewRow = useCallback(async (type: 'page' | 'database' | 'calendar' = 'page') => {
+        await createPage(workspaceId, parentPage.id, "Untitled", type, parentPage.section, parentPage.createdBy);
+        setShowNewRowMenu(false);
     }, [workspaceId, parentPage.id, parentPage.section, parentPage.createdBy]);
 
     // Property Management Functions
@@ -295,9 +310,40 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
                 </div>
                 <div className="flex-1" />
                 {currentView === 'table' && (
-                    <button onClick={handleNewRow} className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded text-sm hover:bg-blue-700 transition">
-                        New <ChevronDown size={12} />
-                    </button>
+                    <div className="relative" ref={newRowMenuRef}>
+                        <button
+                            onClick={() => setShowNewRowMenu(!showNewRowMenu)}
+                            className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded text-sm hover:bg-blue-700 transition"
+                        >
+                            New <ChevronDown size={12} />
+                        </button>
+
+                        {showNewRowMenu && (
+                            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden z-10">
+                                <button
+                                    onClick={() => handleNewRow('page')}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                                >
+                                    <FileText size={16} />
+                                    <span>Page</span>
+                                </button>
+                                <button
+                                    onClick={() => handleNewRow('database')}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                                >
+                                    <Table size={16} />
+                                    <span>Database</span>
+                                </button>
+                                <button
+                                    onClick={() => handleNewRow('calendar')}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                                >
+                                    <Calendar size={16} />
+                                    <span>Calendar</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -406,7 +452,7 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
 
                         {/* Make New Row */}
                         <tr className="border-b border-transparent">
-                            <td className="py-2 px-3 border-r border-gray-100 dark:border-gray-800/50 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm flex items-center gap-2 select-none" onClick={handleNewRow}>
+                            <td className="py-2 px-3 border-r border-gray-100 dark:border-gray-800/50 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm flex items-center gap-2 select-none" onClick={() => handleNewRow('page')}>
                                 <Plus size={14} /> New
                             </td>
                             <td colSpan={columns.length + 1} />
