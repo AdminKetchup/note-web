@@ -186,6 +186,11 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
                 }),
             });
 
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Request failed with status ${response.status}`);
+            }
+
             if (!response.body) throw new Error('No response body');
 
             const reader = response.body.getReader();

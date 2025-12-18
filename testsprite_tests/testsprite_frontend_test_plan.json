@@ -1,0 +1,328 @@
+[
+  {
+    "id": "TC001",
+    "title": "AI Generation API: Successful content generation with valid userId and prompt",
+    "description": "Verify that POST /api/ai returns 200 with generated content when a valid userId and prompt are provided, and the OpenRouter API key is correctly retrieved and decrypted.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /api/ai with valid userId, prompt, model, and messages."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response status is 200."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response contains generated AI content."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "AI Generation API: Missing userId returns 400 error",
+    "description": "Verify that POST /api/ai returns a 400 error when the userId field is missing from the request body.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /api/ai without userId in the request body."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response status is 400."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error message indicates missing userId."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "AI Generation API: API key retrieval fallback to environment variable",
+    "description": "Verify that if the OpenRouter API key is not found in Firestore for a user, the system correctly falls back to using the environment variable key.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /api/ai with valid userId for user without stored API key."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the environment variable API key is used to call OpenRouter API."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response status is 200 and AI content is successfully generated."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "AI Generation API: Handle OpenRouter API failures with 500 error",
+    "description": "Verify that failures in the OpenRouter API call cause the platform to return a clear 500 internal server error to the client.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate OpenRouter API failure during POST /api/ai request."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response status is 500."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response contains appropriate error message indicating internal server error."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "AI Stream API: Successful continuous streaming of AI content without disconnects",
+    "description": "Verify that connecting to /api/ai/stream delivers chunked AI-generated content continuously without premature disconnections or timeouts.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Establish connection to /api/ai/stream endpoint."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify continuous streaming of AI-generated content chunks."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no disconnects or premature timeouts occur during streaming."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Pages API: Unauthorized access to others' pages is rejected",
+    "description": "Verify that attempts to read, update or delete pages owned by other users are rejected by the API with appropriate error responses.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send GET, PUT, DELETE requests to /api/pages/{pageId} for a page not owned by the authenticated user."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that access is denied with status code 403 or 401."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Pages API: Create, update, and delete pages successfully with ownership",
+    "description": "Verify that the authenticated user can create new pages, update pages they own, and delete pages with correct timestamp updates and data integrity.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a new page via POST /api/pages."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page is created with server timestamps set for createdAt and updatedAt."
+      },
+      {
+        "type": "action",
+        "description": "Update the created page's content via PUT /api/pages/{pageId}."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify updatedAt timestamp is updated and page content changes are reflected."
+      },
+      {
+        "type": "action",
+        "description": "Delete the created page via DELETE /api/pages/{pageId}."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page data is soft or fully deleted and no orphaned blocks or subdocuments remain."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Invitations API: Sending and accepting workspace invitations updates Firestore state correctly",
+    "description": "Verify that when a workspace invitation is sent or accepted, all relevant Firestore documents and user permissions update correctly without data inconsistencies.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send a workspace invitation via POST /api/invitations."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify invitation document is created and user invitations list is updated."
+      },
+      {
+        "type": "action",
+        "description": "Accept the invitation via POST /api/invitations/accept."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify workspace members list is updated and invitation is removed or marked accepted."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Firestore Security Rules: Prevent unauthenticated access to data",
+    "description": "Verify that unauthenticated requests cannot read or write any protected Firestore data collections or documents.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to read or write Firestore collections or documents without authentication."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all such attempts are rejected by security rules."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Firestore Security Rules: Restrict user data access to owner only",
+    "description": "Verify that users can only read and write their own data and private subcollections, and cannot access other users' data.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Authenticate as User A and attempt to read/write User B's documents."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied by Firestore security rules."
+      },
+      {
+        "type": "action",
+        "description": "Authenticate as User A and read/write own documents."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is permitted."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Authentication Middleware: Expired or invalid tokens prompt reauthentication",
+    "description": "Verify that API calls made with expired or invalid authentication tokens fail immediately and respond with an indication that the user must re-login.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Make API calls to protected endpoints with expired token."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response status is 401 and message indicates token expiration."
+      },
+      {
+        "type": "action",
+        "description": "Make API calls to protected endpoints with malformed or invalid token."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response is 401 with instructions for reauthentication."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Encrypted API Key Handling: Support keys with special characters without corruption",
+    "description": "Verify that OpenRouter API keys containing special or unusual characters are correctly encrypted, stored, decrypted, and used without corruption.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Store a user API key containing special characters in encrypted Firestore storage."
+      },
+      {
+        "type": "action",
+        "description": "Retrieve and decrypt the stored API key."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that decrypted key matches original key exactly."
+      },
+      {
+        "type": "action",
+        "description": "Use decrypted key in POST /api/ai to generate content."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify API key works correctly without errors."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Timestamps on pages: createdAt and updatedAt use accurate server time",
+    "description": "Verify that the createdAt and updatedAt timestamps on pages and other data entities are set using server time and reflect accurate creation and modification times.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a new page using POST /api/pages."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify createdAt and updatedAt timestamps are set close to current server time."
+      },
+      {
+        "type": "action",
+        "description": "Update the page content using PUT /api/pages/{pageId}."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify updatedAt timestamp updates accordingly, not preceding createdAt."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Page deletion cascades or cleans associated subdocuments",
+    "description": "Verify that deleting a page properly deletes or soft-deletes its associated content blocks and hierarchical subdocuments to avoid orphaned data remnants.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a page with associated nested blocks and subdocuments."
+      },
+      {
+        "type": "action",
+        "description": "Delete the page using DELETE /api/pages/{pageId}."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all subdocuments and blocks related to the page are deleted or marked as deleted."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no orphaned or residual data remains in the database."
+      }
+    ]
+  }
+]

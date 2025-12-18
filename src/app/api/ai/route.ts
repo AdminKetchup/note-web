@@ -23,13 +23,13 @@ export async function POST(req: Request) {
         }
 
         // Fetch encrypted API key from Firestore
-        const settingsRef = doc(db, 'users', userId, 'private', 'settings');
-        const settingsDoc = await getDoc(settingsRef);
-
         let apiKey: string | undefined;
 
-        // Try to get from user settings first
         try {
+            const settingsRef = doc(db, 'users', userId, 'private', 'settings');
+            const settingsDoc = await getDoc(settingsRef);
+
+            // Try to get from user settings first
             if (settingsDoc.exists() && settingsDoc.data()?.openrouterKey) {
                 try {
                     const encryptedKey = settingsDoc.data().openrouterKey;

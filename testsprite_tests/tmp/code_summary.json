@@ -1,0 +1,143 @@
+{
+    "tech_stack": [
+        "TypeScript",
+        "Next.js",
+        "Firebase Firestore",
+        "Node.js"
+    ],
+    "features": [
+        {
+            "name": "AI Content Generation API",
+            "description": "API for generating content using AI models (OpenRouter/OpenAI). Supports both standard and streaming responses.",
+            "files": [
+                "src/app/api/ai/route.ts",
+                "src/app/api/ai/stream/route.ts"
+            ],
+            "api_doc": {
+                "openapi": "3.0.0",
+                "info": {
+                    "title": "AI Content Generation API",
+                    "version": "1.0.0"
+                },
+                "paths": {
+                    "/api/ai": {
+                        "post": {
+                            "summary": "Generate AI content",
+                            "requestBody": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "messages": {
+                                                    "type": "array"
+                                                },
+                                                "model": {
+                                                    "type": "string"
+                                                },
+                                                "userId": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Successful generation"
+                                },
+                                "400": {
+                                    "description": "Bad Request"
+                                },
+                                "401": {
+                                    "description": "Unauthorized"
+                                },
+                                "500": {
+                                    "description": "Internal Server Error"
+                                }
+                            }
+                        }
+                    },
+                    "/api/ai/stream": {
+                        "post": {
+                            "summary": "Stream AI content",
+                            "requestBody": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "messages": {
+                                                    "type": "array"
+                                                },
+                                                "model": {
+                                                    "type": "string"
+                                                },
+                                                "userId": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Stream started"
+                                },
+                                "400": {
+                                    "description": "Bad Request"
+                                },
+                                "500": {
+                                    "description": "Internal Server Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Invitations API",
+            "description": "Manage workspace invitations.",
+            "files": [
+                "src/app/api/invitations/route.ts",
+                "src/app/api/invitations/[id]/route.ts"
+            ],
+            "api_doc": {
+                "openapi": "3.0.0",
+                "info": {
+                    "title": "Invitations API",
+                    "version": "1.0.0"
+                },
+                "paths": {
+                    "/api/invitations": {
+                        "post": {
+                            "summary": "Create invitation"
+                        },
+                        "get": {
+                            "summary": "List invitations"
+                        }
+                    },
+                    "/api/invitations/{id}": {
+                        "get": {
+                            "summary": "Get invitation details"
+                        },
+                        "delete": {
+                            "summary": "Cancel invitation"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "Pages API",
+            "description": "CRUD operations for pages.",
+            "files": [
+                "src/app/api/pages/route.ts",
+                "src/app/api/pages/[pageId]/route.ts"
+            ]
+        }
+    ]
+}

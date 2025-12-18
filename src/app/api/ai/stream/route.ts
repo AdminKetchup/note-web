@@ -21,19 +21,24 @@ export async function POST(req: Request) {
         }
 
         // Fetch encrypted API key
-        const settingsRef = doc(db, 'users', userId, 'private', 'settings');
-        const settingsDoc = await getDoc(settingsRef);
-
         let apiKey: string | undefined;
 
-        // Try to get from user settings first
-        if (settingsDoc.exists() && settingsDoc.data()?.openrouterKey) {
-            try {
-                const encryptedKey = settingsDoc.data().openrouterKey;
-                apiKey = decrypt(encryptedKey);
-            } catch (decryptError) {
-                console.error('Decryption failed, falling back to env:', decryptError);
+        try {
+            const settingsRef = doc(db, 'users', userId, 'private', 'settings');
+            const settingsDoc = await getDoc(settingsRef);
+
+            // Try to get from user settings first
+            if (settingsDoc.exists() && settingsDoc.data()?.openrouterKey) {
+                try {
+                    const encryptedKey = settingsDoc.data().openrouterKey;
+                    apiKey = decrypt(encryptedKey);
+                } catch (decryptError) {
+                    console.error('Decryption failed, falling back to env:', decryptError);
+                }
             }
+        } catch (firestoreError) {
+            console.error('Firestore access failed:', firestoreError);
+            // Continue to fallback
         }
 
         // Fallback to environment variable if no user key or decryption failed

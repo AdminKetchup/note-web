@@ -1,0 +1,24 @@
+{
+  "status": "commited",
+  "type": "backend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "backendAuthType": "basic token",
+  "backendUsername": "recommendations@reply.pinterest.com",
+  "backendPassword": "recommendations@reply.pinterest.com",
+  "executionArgs": {
+    "projectName": "note-web",
+    "projectPath": "/Users/junsu/Desktop/Projects/note-web",
+    "testIds": [
+      "TC002",
+      "TC003",
+      "TC005",
+      "TC007"
+    ],
+    "additionalInstruction": "Run TC002, TC003, TC005, TC007 to verify backend fix.",
+    "envs": {
+      "API_KEY": "sk-user-fp7GPR-uYXMSYxD1zxZ6TKFoAYTHO7zzU2ozGv-VWG-dRXvTVNNGvumceWEKPhHDLc7R3ieLBo1ZuYPSZu0CePtmF31HyWjBeOkscpt8mx7jgCfmEZkt38KzVILu783DxqE"
+    }
+  },
+  "proxy": "http://e27be2fd-2e6c-4828-a9e1-6017044d0f81:qnRPcXYPOQoSsQK1iGal1niQqOoGGIah@tun.testsprite.com:8080"
+}

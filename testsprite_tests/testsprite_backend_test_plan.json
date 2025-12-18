@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "post api ai missing userid returns 400",
+    "description": "Verify that a POST request to /api/ai without the userId in the request body returns a 400 error indicating the missing user ID."
+  },
+  {
+    "id": "TC002",
+    "title": "post api ai valid userid returns generated content",
+    "description": "Verify that a POST request to /api/ai with a valid userId retrieves and decrypts the API key correctly, calls the OpenRouter API, and returns the generated AI content with a 200 status."
+  },
+  {
+    "id": "TC003",
+    "title": "post api ai missing apikey returns 401",
+    "description": "Verify that if the OpenRouter API key is missing or cannot be retrieved, the POST /api/ai endpoint returns a 401 error indicating the missing API key."
+  },
+  {
+    "id": "TC004",
+    "title": "post api ai openrouter api failure returns 500",
+    "description": "Verify that if the OpenRouter API call fails during a POST /api/ai request, the endpoint returns a 500 Internal Server Error with an appropriate error message."
+  },
+  {
+    "id": "TC005",
+    "title": "get api ai stream maintains continuous streaming",
+    "description": "Verify that connecting to the /api/ai/stream endpoint delivers AI-generated content in a continuous streaming manner without premature disconnections or timeouts."
+  },
+  {
+    "id": "TC006",
+    "title": "pages api enforces ownership and permission checks",
+    "description": "Verify that the Pages API endpoints reject unauthorized access attempts to pages owned by other users and allow permitted users to create, read, update, or delete their own pages."
+  },
+  {
+    "id": "TC007",
+    "title": "invitations api updates firestore state correctly",
+    "description": "Verify that sending and accepting workspace invitations via the Invitations API correctly updates the Firestore database state, reflecting new members and permissions without inconsistencies."
+  },
+  {
+    "id": "TC008",
+    "title": "authentication middleware validates tokens and prompts reauthentication",
+    "description": "Verify that the authentication middleware validates user tokens on API calls, fails immediately on expired or invalid tokens, and prompts the user to reauthenticate."
+  },
+  {
+    "id": "TC009",
+    "title": "encrypted apikey storage and retrieval handles special characters",
+    "description": "Verify that user-specific OpenRouter API keys are stored and retrieved in encrypted form correctly, including handling special characters without corruption."
+  },
+  {
+    "id": "TC010",
+    "title": "page deletion cascades to remove associated subdocuments",
+    "description": "Verify that deleting a page via the Pages API properly cascades or cleans associated hierarchical blocks and subdocuments to avoid orphaned data or remnants."
+  }
+]
