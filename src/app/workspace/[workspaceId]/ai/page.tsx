@@ -65,7 +65,37 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
     // Auto-scroll to bottom
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, loading]);
+    }, [messages, loading, isStreaming, streamingContent]);
+
+    // Detect current page from document title or URL
+    useEffect(() => {
+        const title = document.title;
+        if (title && title !== 'Ask AI') {
+            setCurrentPageTitle(title);
+        }
+    }, []);
+
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Cmd+Shift+C: Toggle context
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'c') {
+                e.preventDefault();
+                setIncludeContext(prev => !prev);
+            }
+            // Esc: Clear input or close (if empty)
+            if (e.key === 'Escape') {
+                if (input) {
+                    setInput('');
+                } else {
+                    // Could navigate back or close modal
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [input]);
 
     const loadHistory = async () => {
         if (!workspaceId) return;
@@ -468,14 +498,37 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
 
                 {/* Input Area - Fixed Bottom */}
                 <div className="absolute bottom-0 left-0 w-full flex justify-center pb-8 px-4 bg-gradient-to-t from-[#191919] via-[#191919] to-transparent pt-10">
+                    {/* Context Indicator */}
+                    {includeContext && currentPageTitle && (
+                        <div className="w-full max-w-3xl mb-2">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-[#2A2A2A] rounded-lg text-xs text-gray-400 border border-gray-800">
+                                <FileText size={12} />
+                                <span>Context: {currentPageTitle}</span>
+                                <button
+                                    onClick={() => setIncludeContext(false)}
+                                    className="ml-auto text-gray-500 hover:text-gray-300"
+                                    title="Remove context (Cmd+Shift+C)"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="w-full max-w-3xl bg-[#252525] rounded-[28px] p-2 flex items-center gap-2 shadow-lg border border-[#333]">
                         {/* Plus Button */}
-                        <button className="w-8 h-8 rounded-full bg-[#333] hover:bg-[#444] flex items-center justify-center text-gray-400 transition" onClick={handleNewChat}>
+                        <button className="w-8 h-8 rounded-full bg-[#333] hover:bg-[#444] flex items-center justify-center text-gray-400 transition" onClick={handleNewChat} title="New chat">
                             <Plus size={18} />
                         </button>
 
-                        <button className="w-8 h-8 rounded-full hover:bg-[#333] flex items-center justify-center text-gray-400 transition">
-                            <Globe size={18} />
+                        {/* Context Toggle */}
+                        <button
+                            className={`w-8 h-8 rounded-full hover:bg-[#333] flex items-center justify-center transition ${includeContext ? 'text-blue-400' : 'text-gray-400'
+                                }`}
+                            onClick={() => setIncludeContext(!includeContext)}
+                            title={includeContext ? 'Context enabled (Cmd+Shift+C)' : 'Context disabled'}
+                        >
+                            <FileText size={18} />
                         </button>
 
                         <input
