@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, use } from "react";
 import { useAuth } from "@/context/AuthContext"; // Assuming we have auth context
 import { generateAIContent } from "@/lib/ai";
-import { Sparkles, ArrowUp, Zap, FileText, Globe, Paperclip, Search, CheckCircle2, ChevronDown, Plus, MessageSquare, Trash2, History, Menu } from "lucide-react"; // Import more icons
+import { Sparkles, ArrowUp, Zap, FileText, Globe, Paperclip, Search, CheckCircle2, ChevronDown, Plus, MessageSquare, Trash2, History, Menu, Copy, RefreshCw } from "lucide-react"; // Import more icons
 import { createChat, updateChatMessages, getWorkspaceChats, getChat, ChatSession, deleteChat } from "@/lib/chat-service";
 
 interface Message {
@@ -151,6 +151,55 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
         }
     };
 
+    const handleCopy = async (content: string) => {
+        try {
+            await navigator.clipboard.writeText(content);
+            // Simple toast notification (you can enhance with a toast library)
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-in fade-in slide-in-from-top';
+            toast.textContent = '✓ Copied to clipboard';
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('animate-out', 'fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+    };
+
+    const handleRegenerate = async (messageIndex: number) => {
+        if (!user || !workspaceId || messageIndex < 1) return;
+
+        // Get the user message before the AI response
+        const userMessage = messages[messageIndex - 1];
+        if (userMessage.role !== 'user') return;
+
+        // Remove the AI message and everything after it
+        const newMessages = messages.slice(0, messageIndex);
+        setMessages(newMessages);
+        setLoading(true);
+
+        try {
+            // Regenerate AI response
+            const { content, reasoning } = await generateAIContent(userMessage.content, undefined, model);
+            const aiMsg: Message = { role: 'assistant', content, reasoning };
+            const finalMessages = [...newMessages, aiMsg];
+
+            setMessages(finalMessages);
+
+            // Update chat if exists
+            if (chatId) {
+                await updateChatMessages(workspaceId, chatId, finalMessages);
+            }
+        } catch (error) {
+            console.error("Regenerate Error", error);
+            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, regeneration failed." }]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="flex-1 h-screen flex bg-[#191919] text-white relative font-sans overflow-hidden">
 
@@ -284,7 +333,7 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
                                             <Sparkles size={16} className="text-purple-400" />
                                         </div>
                                     )}
-                                    <div className={`max-w-[85%] flex flex-col gap-2 ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                    <div className={`max-w-[85%] flex flex-col gap-2 group ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
 
                                         {/* Reasoning Block */}
                                         {m.reasoning && (
@@ -301,11 +350,31 @@ export default function AIDashboard({ params }: { params: Promise<{ workspaceId:
                                         )}
 
                                         <div className={`p-4 rounded-2xl text-[15px] leading-relaxed shadow-sm ${m.role === 'user'
-                                                ? 'bg-white text-black font-medium'
-                                                : 'bg-[#2A2A2A] text-gray-100 border border-gray-800'
+                                            ? 'bg-white text-black font-medium'
+                                            : 'bg-[#2A2A2A] text-gray-100 border border-gray-800'
                                             }`}>
                                             <div className="whitespace-pre-wrap">{m.content}</div>
                                         </div>
+
+                                        {/* Action Buttons (Only for AI messages) */}
+                                        {m.role === 'assistant' && (
+                                            <div className="flex gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleCopy(m.content)}
+                                                    className="p-1.5 rounded-lg hover:bg-[#333] text-gray-500 hover:text-gray-300 transition"
+                                                    title="Copy to clipboard"
+                                                >
+                                                    <Copy size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRegenerate(i)}
+                                                    className="p-1.5 rounded-lg hover:bg-[#333] text-gray-500 hover:text-gray-300 transition"
+                                                    title="Regenerate response"
+                                                >
+                                                    <RefreshCw size={14} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
