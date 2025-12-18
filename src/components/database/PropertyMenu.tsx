@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+"use client";
+
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Type, Hash, Calendar, CheckSquare, Link as LinkIcon, Mail, Phone, Folder, Calculator, GitBranch, Sigma, Users, FileText, MoreHorizontal, Trash2, Copy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Page } from '@/lib/workspace';
 import SelectOptionsEditor from './SelectOptionsEditor';
@@ -34,7 +36,7 @@ const PROPERTY_TYPES = [
     { type: 'person', value: 'person', label: 'Person', icon: Users },
 ];
 
-export default function PropertyMenu({ property, onUpdate, onDelete, onDuplicate, onMove, onClose }: PropertyMenuProps) {
+function PropertyMenu({ property, onUpdate, onDelete, onDuplicate, onMove, onClose }: PropertyMenuProps) {
     const [isEditingName, setIsEditingName] = useState(false);
     const [propertyName, setPropertyName] = useState(property.name);
     const [showTypeDropdown, setShowTypeDropdown] = useState(false);
@@ -209,3 +211,6 @@ export default function PropertyMenu({ property, onUpdate, onDelete, onDuplicate
         </div>
     );
 }
+
+// Memoize to prevent re-renders when parent updates
+export default React.memo(PropertyMenu);

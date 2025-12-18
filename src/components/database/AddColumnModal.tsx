@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { X, Type, Hash, Calendar, CheckSquare, Link as LinkIcon, Mail, Phone, Folder, Calculator, GitBranch, Sigma, Users } from 'lucide-react';
 import { Page } from '@/lib/workspace';
 
@@ -28,7 +28,7 @@ const PROPERTY_TYPES = [
     { type: 'person', label: 'Person', icon: Users, description: 'Assign people' },
 ];
 
-export default function AddColumnModal({ onAdd, onClose }: AddColumnModalProps) {
+function AddColumnModal({ onAdd, onClose }: AddColumnModalProps) {
     const [name, setName] = useState('');
     const [selectedType, setSelectedType] = useState('text');
 
@@ -124,3 +124,6 @@ export default function AddColumnModal({ onAdd, onClose }: AddColumnModalProps) 
         </div>
     );
 }
+
+// Memoize to prevent re-renders when parent updates
+export default React.memo(AddColumnModal);

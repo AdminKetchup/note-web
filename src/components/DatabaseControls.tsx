@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Filter, FilterGroup, FilterCondition, getOperatorsForType } from '@/lib/filter-engine';
 import { Sort, SortDirection } from '@/lib/sort-engine';
 import { Plus, X, ChevronDown, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
@@ -15,7 +15,7 @@ interface DatabaseControlsProps {
   onSortChange: (sorts: Sort[]) => void;
 }
 
-export default function DatabaseControls({ properties, filterGroup, sorts, onFilterChange, onSortChange }: DatabaseControlsProps) {
+function DatabaseControls({ properties, filterGroup, sorts, onFilterChange, onSortChange }: DatabaseControlsProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [showSorts, setShowSorts] = useState(false);
 
@@ -117,3 +117,6 @@ export default function DatabaseControls({ properties, filterGroup, sorts, onFil
     </div>
   );
 }
+
+// Memoize to prevent re-renders when parent updates
+export default React.memo(DatabaseControls);
