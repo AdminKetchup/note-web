@@ -12,15 +12,6 @@ import { useRouter } from "next/navigation";
 import PropertyRenderer from "./PropertyRenderer";
 
 // Lazy load heavy view components to reduce initial bundle size
-const ChartView = dynamic(() => import("./ChartView"), {
-    loading: () => <div className="p-4 text-center text-gray-500">Loading chart...</div>
-});
-const GalleryView = dynamic(() => import("./GalleryView"), {
-    loading: () => <div className="p-4 text-center text-gray-500">Loading gallery...</div>
-});
-const BoardView = dynamic(() => import("./BoardView"), {
-    loading: () => <div className="p-4 text-center text-gray-500">Loading board...</div>
-});
 const ListView = dynamic(() => import("./ListView"), {
     loading: () => <div className="p-4 text-center text-gray-500">Loading list...</div>
 });
@@ -42,7 +33,7 @@ type Property = NonNullable<Page['properties']>[number];
 interface SavedView {
     id: string;
     name: string;
-    viewType: 'table' | 'list' | 'board' | 'gallery' | 'calendar' | 'timeline' | 'chart';
+    viewType: 'table' | 'list' | 'calendar' | 'timeline';
     filters?: FilterGroup;
     sorts?: Sort[];
     isDefault?: boolean;
@@ -57,7 +48,7 @@ interface DatabaseViewProps {
 
 export default function DatabaseView({ workspaceId, parentPage, childPages, onUpdateParent }: DatabaseViewProps) {
     const router = useRouter();
-    const [currentView, setCurrentView] = useState<'table' | 'list' | 'board' | 'gallery' | 'calendar' | 'timeline' | 'chart'>('table');
+    const [currentView, setCurrentView] = useState<'table' | 'list' | 'calendar' | 'timeline'>('table');
 
     // Filter & Sort state
     const [filterGroup, setFilterGroup] = useState<FilterGroup>({ condition: 'AND', filters: [] });
@@ -79,34 +70,7 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
     // Ref to prevent infinite re-render when auto-creating Status property
     const hasCreatedStatusRef = useRef(false);
 
-    // Auto-create Select property for Board view if none exists
-    useEffect(() => {
-        if (currentView === 'board' && !hasCreatedStatusRef.current) {
-            const hasSelectProperty = columns.some(col => col.type === 'select');
-
-            if (!hasSelectProperty && columns.length >= 0) {
-                hasCreatedStatusRef.current = true;
-                // Auto-create Status property for Board view
-                const statusProperty = {
-                    id: crypto.randomUUID(),
-                    name: 'Status',
-                    type: 'select' as const,
-                    options: [
-                        { id: crypto.randomUUID(), name: 'Todo', color: 'gray' },
-                        { id: crypto.randomUUID(), name: 'In Progress', color: 'blue' },
-                        { id: crypto.randomUUID(), name: 'Done', color: 'green' },
-                    ]
-                };
-
-                onUpdateParent({
-                    properties: [...columns, statusProperty]
-                });
-            }
-        } else if (currentView !== 'board') {
-            // Reset ref when leaving board view
-            hasCreatedStatusRef.current = false;
-        }
-    }, [currentView, columns, onUpdateParent]);
+    // Removed Board view auto-create logic, columns, onUpdateParent]);
 
     // Memoize expensive calculations
     const filteredAndSortedPages = useMemo(
@@ -275,33 +239,6 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
                             }`}
                     >
                         <Table size={14} /> Table
-                    </button>
-                    <button
-                        onClick={() => setCurrentView('board')}
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${currentView === 'board'
-                            ? 'bg-white dark:bg-[#1C1C1C] text-gray-900 dark:text-gray-100 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                            }`}
-                    >
-                        <Trello size={14} /> Board
-                    </button>
-                    <button
-                        onClick={() => setCurrentView('gallery')}
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${currentView === 'gallery'
-                            ? 'bg-white dark:bg-[#1C1C1C] text-gray-900 dark:text-gray-100 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                            }`}
-                    >
-                        <Grid size={14} /> Gallery
-                    </button>
-                    <button
-                        onClick={() => setCurrentView('chart')}
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition ${currentView === 'chart'
-                            ? 'bg-white dark:bg-[#1C1C1C] text-gray-900 dark:text-gray-100 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                            }`}
-                    >
-                        <BarChart3 size={14} /> Chart
                     </button>
                 </div>
 
@@ -473,22 +410,7 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
                 <TimelineView workspaceId={workspaceId} parentPage={parentPage} childPages={filteredAndSortedPages} />
             )}
 
-            {currentView === 'chart' && (
-                <ChartView parentPage={parentPage} childPages={childPages} />
-            )}
 
-            {currentView === 'gallery' && (
-                <GalleryView workspaceId={workspaceId} parentPage={parentPage} childPages={childPages} />
-            )}
-
-            {currentView === 'board' && (
-                <BoardView
-                    workspaceId={workspaceId}
-                    parentPage={parentPage}
-                    childPages={childPages}
-                    onUpdateParent={onUpdateParent}
-                />
-            )}
 
             {/* Add Column Modal */}
             {showAddColumnModal && (
