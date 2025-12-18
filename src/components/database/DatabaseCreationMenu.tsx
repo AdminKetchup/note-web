@@ -214,25 +214,47 @@ export default function DatabaseCreationMenu({
      * Parse AI response to properties
      */
     const parseAIColumns = (aiResponse: string) => {
+        interface AIColumn {
+            id?: string;
+            name: string;
+            type: string;
+            options?: Array<{ id: string; name: string; color: string }>;
+        }
+
+        interface AIParsedResponse {
+            columns?: AIColumn[];
+            properties?: AIColumn[];
+        }
+
+        type PropertyType = 'text' | 'number' | 'select' | 'multi-select' | 'date' | 'checkbox' | 'url' | 'email' | 'phone' | 'person' | 'files' | 'formula' | 'relation' | 'rollup' | 'created_time' | 'created_by' | 'last_edited_time' | 'last_edited_by' | 'progress';
+
+        const validPropertyTypes: PropertyType[] = ['text', 'number', 'select', 'multi-select', 'date', 'checkbox', 'url', 'email', 'phone', 'person', 'files', 'formula', 'relation', 'rollup', 'created_time', 'created_by', 'last_edited_time', 'last_edited_by', 'progress'];
+
+        const isValidPropertyType = (type: string): type is PropertyType => {
+            return validPropertyTypes.includes(type as PropertyType);
+        };
+
         try {
-            const parsed = JSON.parse(aiResponse);
-            return (parsed.columns || parsed.properties || []).map((col: any, index: number) => ({
+            const parsed: AIParsedResponse = JSON.parse(aiResponse);
+            const columns = parsed.columns || parsed.properties || [];
+
+            return columns.map((col, index) => ({
                 id: col.id || `ai-prop-${index}`,
                 name: col.name,
-                type: col.type,
+                type: isValidPropertyType(col.type) ? col.type : 'text',
                 options: col.options,
             }));
         } catch {
             // Fallback: create basic properties
             return [
-                { id: 'name', name: 'Name', type: 'text' },
+                { id: 'name', name: 'Name', type: 'text' as PropertyType },
                 {
-                    id: 'status', name: 'Status', type: 'select', options: [
+                    id: 'status', name: 'Status', type: 'select' as PropertyType, options: [
                         { id: 'todo', name: 'To Do', color: 'gray' },
                         { id: 'done', name: 'Done', color: 'green' },
                     ]
                 },
-                { id: 'date', name: 'Date', type: 'date' },
+                { id: 'date', name: 'Date', type: 'date' as PropertyType },
             ];
         }
     };

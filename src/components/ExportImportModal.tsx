@@ -504,7 +504,15 @@ export default function ExportImportModal({ isOpen, onClose, pageId, pageTitle }
     );
 }
 
-function ExportButton({ icon: Icon, title, description, onClick, disabled }: any) {
+interface ExportButtonProps {
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    title: string;
+    description: string;
+    onClick: () => void;
+    disabled: boolean;
+}
+
+function ExportButton({ icon: Icon, title, description, onClick, disabled }: ExportButtonProps) {
     return (
         <button
             onClick={onClick}
