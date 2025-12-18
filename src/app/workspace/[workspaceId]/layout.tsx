@@ -1,29 +1,74 @@
 /**
  * Workspace Layout with Global Components
- * Integrates CommandPalette, NotificationCenter, and Keyboard Shortcuts
+ * Preserves original Sidebar + adds CommandPalette, NotificationCenter, Keyboard Shortcuts
  */
 
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useState } from 'react';
+import Sidebar from "@/components/Sidebar";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
+import { getWorkspace } from "@/lib/workspace";
 import CommandPalette from '@/components/CommandPalette';
 import NotificationCenter from '@/components/NotificationCenter';
 import { NotificationBadge } from '@/components/NotificationCenter';
 import ShortcutsModal from '@/components/ShortcutsModal';
 import { useKeyboardShortcuts, Shortcut, getModifierKey } from '@/hooks/useKeyboardShortcuts';
-import { Bell, Search, Keyboard } from 'lucide-react';
 
-export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+export default function WorkspaceLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const params = useParams();
     const workspaceId = params.workspaceId as string;
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
+    const [isAuthorized, setIsAuthorized] = useState(false);
+    const [checking, setChecking] = useState(true);
 
     // Global UI State
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+
+    useEffect(() => {
+        if (authLoading) return; // Wait for Auth to init
+
+        if (!user) {
+            router.push('/');
+            return;
+        }
+
+        checkAccess();
+    }, [user, authLoading, workspaceId]);
+
+    const checkAccess = async () => {
+        if (!user) return;
+        setChecking(true);
+        try {
+            const workspace = await getWorkspace(workspaceId);
+            if (!workspace) {
+                // Workspace doesn't exist
+                router.push('/');
+                return;
+            }
+
+            if (workspace.members.includes(user.uid)) {
+                setIsAuthorized(true);
+            } else {
+                // Not a member
+                alert("You do not have permission to access this workspace.");
+                router.push('/');
+            }
+        } catch (error) {
+            console.error(error);
+            router.push('/');
+        }
+        setChecking(false);
+    };
 
     // Global Keyboard Shortcuts
     const shortcuts: Shortcut[] = [
@@ -59,51 +104,24 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
     // Register global shortcuts
     useKeyboardShortcuts(shortcuts);
 
-    return (
-        <div className="h-screen flex flex-col">
-            {/* Global Header */}
-            <header className="h-14 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 bg-white dark:bg-gray-900">
-                <div className="flex items-center gap-4">
-                    <h1 className="font-semibold">Workspace</h1>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    {/* Search Button */}
-                    <button
-                        onClick={() => setIsCommandPaletteOpen(true)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition text-sm"
-                        title="Search (Cmd+K)"
-                    >
-                        <Search size={16} />
-                        <span className="hidden md:inline">Search</span>
-                        <kbd className="hidden md:inline px-1.5 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-xs">
-                            {getModifierKey()}K
-                        </kbd>
-                    </button>
-
-                    {/* Shortcuts Button */}
-                    <button
-                        onClick={() => setIsShortcutsOpen(true)}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-                        title="Keyboard Shortcuts (Cmd+/)"
-                    >
-                        <Keyboard size={20} />
-                    </button>
-
-                    {/* Notification Badge */}
-                    {user && (
-                        <NotificationBadge
-                            userId={user.uid}
-                            onClick={() => setIsNotificationsOpen(prev => !prev)}
-                        />
-                    )}
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <div className="flex-1 overflow-hidden">
-                {children}
+    if (authLoading || checking) {
+        return (
+            <div className="flex h-screen items-center justify-center text-gray-400 text-sm">
+                Verifying access...
             </div>
+        );
+    }
+
+    if (!isAuthorized) {
+        return null;
+    }
+
+    return (
+        <div className="flex h-screen w-full bg-white text-gray-900 font-sans">
+            <Sidebar workspaceId={workspaceId} />
+            <main className="flex-1 overflow-y-auto h-full relative">
+                {children}
+            </main>
 
             {/* Global Modals/Sidebars */}
             {user && (
