@@ -355,7 +355,9 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
                                             onClick={() => router.push(`/workspace/${workspaceId}/${page.id}`)}
                                             title="Open Page"
                                         >
-                                            <FileText size={14} />
+                                            {page.type === 'database' && <Table size={14} />}
+                                            {page.type === 'calendar' && <Calendar size={14} />}
+                                            {(!page.type || page.type === 'page') && <FileText size={14} />}
                                         </button>
                                         <input
                                             className="flex-1 bg-transparent outline-none font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600"
