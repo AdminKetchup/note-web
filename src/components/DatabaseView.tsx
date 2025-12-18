@@ -289,11 +289,31 @@ export default function DatabaseView({ workspaceId, parentPage, childPages, onUp
                 <table className="w-full border-collapse min-w-[600px] text-sm">
                     <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-800">
-                            {/* Name Column (Fixed) */}
-                            <th className="w-[300px] min-w-[200px] text-left py-2 px-3 font-normal text-xs text-gray-500 border-r border-gray-200 dark:border-gray-800/50">
-                                <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#2C2C2C] p-1 rounded -ml-1">
+                            {/* Name Column (Editable) */}
+                            <th className="w-[300px] min-w-[200px] text-left py-2 px-3 font-normal text-xs text-gray-500 border-r border-gray-200 dark:border-gray-800/50 group relative">
+                                <div
+                                    onClick={() => setActivePropertyMenu(activePropertyMenu === 'name-column' ? null : 'name-column')}
+                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#2C2C2C] p-1 rounded -ml-1"
+                                >
                                     <FileText size={14} /> Name
                                 </div>
+
+                                {/* Property Menu for Name column */}
+                                {activePropertyMenu === 'name-column' && (
+                                    <div className="absolute left-0 top-full mt-1 z-50">
+                                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 w-48">
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 px-2">
+                                                This is a fixed column that shows page names.
+                                            </div>
+                                            <button
+                                                onClick={() => setActivePropertyMenu(null)}
+                                                className="w-full text-left px-2 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                                            >
+                                                Close
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </th>
 
                             {/* Dynamic Columns */}
