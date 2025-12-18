@@ -20,6 +20,7 @@ import { Sparkles, Share, MoreHorizontal, FileText, Table as TableIcon, Layout, 
 import { serverTimestamp } from "firebase/firestore";
 import { debounce } from "lodash";
 import { usePresence } from "@/hooks/usePresence";
+import { logActivity } from "@/components/ActivityFeed";
 
 export default function PageEditor() {
     const params = useParams();

@@ -22,6 +22,8 @@ import {
 } from 'firebase/firestore';
 import { X, Send, Trash2, CheckCircle, Circle, MessageSquare, CornerDownRight, ChevronDown, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { createNotification } from '@/components/NotificationCenter';
+import { logActivity } from '@/components/ActivityFeed';
 
 interface Comment {
     id: string;
