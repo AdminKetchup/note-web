@@ -1,7 +1,22 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, GripVertical } from 'lucide-react';
+
+/**
+ * Generate UUID with fallback for older browsers
+ */
+function generateUUID(): string {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    // Fallback for older browsers
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
 
 type PropertyType = 'text' | 'number' | 'select' | 'multi-select' | 'date' | 'person' |
     'files' | 'checkbox' | 'url' | 'email' | 'phone' | 'formula' |
@@ -66,11 +81,18 @@ const PROPERTY_TYPES: { value: PropertyType; label: string; description: string 
 export default function PropertyEditor({ isOpen, property, allProperties = [], onSave, onDelete, onClose }: PropertyEditorProps) {
     const [config, setConfig] = useState<PropertyConfig>(
         property || {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             name: 'New Property',
             type: 'text',
         }
     );
+
+    // Update config when property prop changes
+    useEffect(() => {
+        if (property) {
+            setConfig(property);
+        }
+    }, [property]);
 
     if (!isOpen) return null;
 
@@ -81,7 +103,7 @@ export default function PropertyEditor({ isOpen, property, allProperties = [], o
 
     const addOption = () => {
         const newOption: PropertyOption = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             name: `Option ${(config.options?.length || 0) + 1}`,
             color: 'blue',
         };

@@ -44,7 +44,7 @@ export default function DatabaseCreationMenu({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    prompt: `Create a database structure for: ${aiPrompt}. Return JSON with columns array, each having: name, type (text/number/select/date/checkbox), and optionaldefault values.`,
+                    prompt: `Create a database structure for: ${aiPrompt}. Return JSON with columns array, each having: name, type (text/number/select/date/checkbox), and optional default values.`,
                 }),
             });
 
@@ -168,11 +168,12 @@ export default function DatabaseCreationMenu({
             const sampleValue = lines[1]?.split(',')[index]?.trim().replace(/"/g, '');
             let type: 'text' | 'number' | 'select' | 'date' | 'checkbox' = 'text';
 
-            if (!isNaN(Number(sampleValue))) {
+            // Check for empty strings to avoid false positives
+            if (sampleValue && !isNaN(Number(sampleValue))) {
                 type = 'number';
             } else if (sampleValue?.toLowerCase() === 'true' || sampleValue?.toLowerCase() === 'false') {
                 type = 'checkbox';
-            } else if (/^\d{4}-\d{2}-\d{2}/.test(sampleValue)) {
+            } else if (sampleValue && /^\d{4}-\d{2}-\d{2}/.test(sampleValue)) {
                 type = 'date';
             }
 

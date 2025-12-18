@@ -89,6 +89,15 @@ function extractTextFromNode(node: any): string {
 }
 
 /**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
  * Export page to JSON (Notion format compatible)
  */
 export async function exportToJSON(pageId: string): Promise<string> {
@@ -160,30 +169,31 @@ export async function exportToHTML(pageId: string, pageTitle: string): Promise<s
  */
 function blockToHTML(block: Block): string {
     const text = extractTextFromBlock(block);
+    const safeText = escapeHtml(text);
 
     switch (block.type) {
         case 'heading_1':
-            return `<h1>${text}</h1>`;
+            return `<h1>${safeText}</h1>`;
         case 'heading_2':
-            return `<h2>${text}</h2>`;
+            return `<h2>${safeText}</h2>`;
         case 'heading_3':
-            return `<h3>${text}</h3>`;
+            return `<h3>${safeText}</h3>`;
         case 'bulleted_list_item':
-            return `<ul><li>${text}</li></ul>`;
+            return `<ul><li>${safeText}</li></ul>`;
         case 'numbered_list_item':
-            return `<ol><li>${text}</li></ol>`;
+            return `<ol><li>${safeText}</li></ol>`;
         case 'todo':
             const checked = block.properties?.checked ? 'checked' : '';
-            return `<div class="todo"><input type="checkbox" ${checked} disabled>${text}</div>`;
+            return `<div class="todo"><input type="checkbox" ${checked} disabled>${safeText}</div>`;
         case 'code':
-            return `<pre><code>${text}</code></pre>`;
+            return `<pre><code>${safeText}</code></pre>`;
         case 'quote':
-            return `<blockquote>${text}</blockquote>`;
+            return `<blockquote>${safeText}</blockquote>`;
         case 'divider':
             return '<hr>';
         case 'paragraph':
         default:
-            return `<p>${text || '&nbsp;'}</p>`;
+            return `<p>${safeText || '&nbsp;'}</p>`;
     }
 }
 

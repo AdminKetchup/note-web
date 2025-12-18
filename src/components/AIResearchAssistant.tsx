@@ -45,8 +45,15 @@ export function AIResearchAssistant({ onReportGenerated }: AIResearchProps) {
      * Step 1: Search the web
      */
     const searchWeb = async (searchQuery: string): Promise<SearchResult[]> => {
+        const isDevelopment = process.env.NODE_ENV === 'development';
+
         // In production, use a real search API (Google Custom Search, Bing, etc.)
-        // For now, simulate search results
+        if (!isDevelopment) {
+            // TODO: Implement real search API
+            throw new Error('Search API not configured for production');
+        }
+
+        // Development: Use mock data
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         const mockResults: SearchResult[] = [
